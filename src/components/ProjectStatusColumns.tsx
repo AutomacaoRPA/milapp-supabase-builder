@@ -149,13 +149,7 @@ const ProjectStatusColumns = ({ projects, onProjectUpdate, onProjectSelect }: Pr
 
     const newStatus = destination.droppableId;
     
-    // Debug info for drag operation
-      projectId: project.id,
-      oldStatus: project.status,
-      newStatus: newStatus,
-      sourceId: source.droppableId,
-      destinationId: destination.droppableId
-    });
+    // Debug info for drag operation - object removed for clean build
     
     try {
       await onProjectUpdate(project.id, { status: newStatus as any });
