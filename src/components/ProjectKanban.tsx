@@ -6,9 +6,10 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   MoreVertical, 
   Calendar, 
@@ -19,12 +20,20 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  ArrowRight,
   Plus,
-  GripVertical
+  GripVertical,
+  GitBranch,
+  MessageSquare,
+  FileText,
+  Code,
+  Bug,
+  Zap,
+  Star,
+  Eye,
+  Edit
 } from "lucide-react";
 import { Project } from "@/hooks/useProjects";
-import { useProjectTasks } from "@/hooks/useProjectTasks";
+import { useProjectTasks, ProjectTask } from "@/hooks/useProjectTasks";
 import { toast } from "sonner";
 
 interface ProjectKanbanProps {
@@ -33,107 +42,147 @@ interface ProjectKanbanProps {
   onProjectSelect?: (project: Project) => void;
 }
 
-const statusColumns = [
+// Colunas otimizadas para desenvolvimento
+const taskStatusColumns = [
   { 
-    id: "ideacao", 
+    id: "todo", 
     label: "Backlog", 
-    color: "border-l-4 border-l-red-500",
-    count: 0
+    color: "bg-slate-50 border-l-4 border-l-slate-400",
+    bgColor: "bg-slate-50",
+    count: 0,
+    icon: FileText
   },
   { 
-    id: "planejamento", 
-    label: "Priorizado", 
-    color: "border-l-4 border-l-yellow-500",
-    count: 1
+    id: "in_progress", 
+    label: "Em Progresso", 
+    color: "bg-blue-50 border-l-4 border-l-blue-500",
+    bgColor: "bg-blue-50", 
+    count: 0,
+    icon: Code
   },
   { 
-    id: "desenvolvimento", 
-    label: "Em Desenvolvimento", 
-    color: "border-l-4 border-l-blue-500",
-    count: 2
+    id: "review", 
+    label: "Code Review", 
+    color: "bg-yellow-50 border-l-4 border-l-yellow-500",
+    bgColor: "bg-yellow-50",
+    count: 0,
+    icon: Eye
   },
   { 
-    id: "homologacao", 
-    label: "Validação", 
-    color: "border-l-4 border-l-green-500",
-    count: 0
+    id: "testing", 
+    label: "Testing", 
+    color: "bg-purple-50 border-l-4 border-l-purple-500", 
+    bgColor: "bg-purple-50",
+    count: 0,
+    icon: Bug
   },
   { 
-    id: "concluido", 
+    id: "done", 
     label: "Concluído", 
-    color: "border-l-4 border-l-gray-500",
-    count: 0
+    color: "bg-green-50 border-l-4 border-l-green-500",
+    bgColor: "bg-green-50",
+    count: 0,
+    icon: CheckCircle
   }
+];
+
+const taskTypes = [
+  { value: "feature", label: "Feature", icon: Star, color: "bg-blue-100 text-blue-800" },
+  { value: "bug", label: "Bug", icon: Bug, color: "bg-red-100 text-red-800" },
+  { value: "improvement", label: "Melhoria", icon: TrendingUp, color: "bg-green-100 text-green-800" },
+  { value: "documentation", label: "Documentação", icon: FileText, color: "bg-purple-100 text-purple-800" },
+  { value: "hotfix", label: "Hotfix", icon: Zap, color: "bg-orange-100 text-orange-800" }
+];
+
+const priorityLevels = [
+  { value: 1, label: "Muito Baixa", color: "text-gray-600" },
+  { value: 2, label: "Baixa", color: "text-green-600" },
+  { value: 3, label: "Média", color: "text-yellow-600" },
+  { value: 4, label: "Alta", color: "text-orange-600" },
+  { value: 5, label: "Crítica", color: "text-red-600" }
 ];
 
 const ProjectKanban = ({ projects, onProjectUpdate, onProjectSelect }: ProjectKanbanProps) => {
   const [newTaskDialogOpen, setNewTaskDialogOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [selectedColumnId, setSelectedColumnId] = useState<string>("");
+  const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [newTaskData, setNewTaskData] = useState({
     title: "",
     description: "",
-    type: "development",
+    type: "feature",
     priority: 3,
     estimated_hours: 0
   });
 
-  const { createTask } = useProjectTasks();
+  const { createTask, updateTask, fetchTasks } = useProjectTasks();
 
-  const projectsByStatus = useMemo(() => {
-    return statusColumns.reduce((acc, column) => {
-      acc[column.id] = projects.filter(project => project.status === column.id);
+  const tasksByStatus = useMemo(() => {
+    return taskStatusColumns.reduce((acc, column) => {
+      acc[column.id] = tasks.filter(task => task.status === column.id);
       return acc;
-    }, {} as Record<string, Project[]>);
-  }, [projects]);
+    }, {} as Record<string, ProjectTask[]>);
+  }, [tasks]);
 
-  const handleDragEnd = (result: DropResult) => {
+  // Carregar tasks quando um projeto for selecionado
+  const selectedProject = projects[0]; // Para demo, usar o primeiro projeto
+
+  const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination) return;
     if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
-    const project = projects.find(p => p.id === draggableId);
-    if (!project) return;
+    const task = tasks.find(t => t.id === draggableId);
+    if (!task) return;
 
-    // Mapear os IDs das colunas para os status do projeto
-    const statusMapping: Record<string, string> = {
-      'ideacao': 'ideacao',
-      'planejamento': 'planejamento', 
-      'desenvolvimento': 'desenvolvimento',
-      'homologacao': 'homologacao',
-      'concluido': 'concluido'
-    };
-
-    const newStatus = statusMapping[destination.droppableId];
-    if (newStatus && onProjectUpdate) {
-      onProjectUpdate(project.id, { status: newStatus as any });
-      toast.success(`Projeto movido para ${statusColumns.find(c => c.id === destination.droppableId)?.label}`);
+    const newStatus = destination.droppableId;
+    
+    try {
+      await updateTask(task.id, { status: newStatus as any });
+      
+      // Atualizar estado local
+      setTasks(prevTasks => 
+        prevTasks.map(t => 
+          t.id === task.id ? { ...t, status: newStatus as any } : t
+        )
+      );
+      
+      const columnLabel = taskStatusColumns.find(c => c.id === destination.droppableId)?.label;
+      toast.success(`Task movida para ${columnLabel}`);
+    } catch (error) {
+      toast.error("Erro ao mover task");
     }
   };
 
   const handleCreateTask = async () => {
-    if (!selectedProjectId || !newTaskData.title.trim()) {
+    if (!selectedProject || !newTaskData.title.trim()) {
       toast.error("Preencha pelo menos o título da task");
       return;
     }
 
     try {
-      await createTask({
-        project_id: selectedProjectId,
+      const newTask = await createTask({
+        project_id: selectedProject.id,
         title: newTaskData.title,
         description: newTaskData.description,
         type: newTaskData.type as any,
         priority: newTaskData.priority,
         estimated_hours: newTaskData.estimated_hours,
-        status: 'todo',
+        status: selectedColumnId as any || 'todo',
         created_by: 'demo-user-id' // TODO: Usar auth.uid() quando autenticação estiver configurada
       });
+
+      // Atualizar estado local
+      if (newTask) {
+        setTasks(prevTasks => [...prevTasks, newTask]);
+      }
 
       setNewTaskDialogOpen(false);
       setNewTaskData({
         title: "",
         description: "",
-        type: "development",
+        type: "feature",
         priority: 3,
         estimated_hours: 0
       });
@@ -143,32 +192,21 @@ const ProjectKanban = ({ projects, onProjectUpdate, onProjectSelect }: ProjectKa
     }
   };
 
-  const getPriorityColor = (priority: number | null) => {
-    if (!priority) return "text-muted-foreground";
-    if (priority >= 4) return "text-destructive";
-    if (priority >= 3) return "text-rpa";
-    return "text-accent";
+  const handleOpenCreateDialog = (columnId: string) => {
+    setSelectedColumnId(columnId);
+    setNewTaskDialogOpen(true);
   };
 
-  const getPriorityIcon = (priority: number | null) => {
-    if (!priority || priority < 4) return AlertTriangle;
-    return priority >= 4 ? XCircle : CheckCircle;
+  const getPriorityInfo = (priority: number | null) => {
+    return priorityLevels.find(p => p.value === priority) || { 
+      value: 3, 
+      label: "Média", 
+      color: "text-yellow-600" 
+    };
   };
 
-  const getPriorityLabel = (priority: number | null) => {
-    if (!priority) return "Não definida";
-    const labels = ["", "Muito Baixa", "Baixa", "Média", "Alta", "Crítica"];
-    return labels[priority] || "Não definida";
-  };
-
-  const formatCurrency = (value: number | null) => {
-    if (!value) return "Não definido";
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+  const getTaskTypeInfo = (type: string) => {
+    return taskTypes.find(t => t.value === type) || taskTypes[0];
   };
 
   const formatDate = (dateString: string | null) => {
@@ -176,313 +214,320 @@ const ProjectKanban = ({ projects, onProjectUpdate, onProjectSelect }: ProjectKa
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const calculateProgress = (project: Project) => {
-    const statusProgress = {
-      ideacao: 10,
-      planejamento: 25,
-      desenvolvimento: 60,
-      homologacao: 85,
-      producao: 95,
-      suspenso: 0,
-      concluido: 100
-    };
-    return statusProgress[project.status] || 0;
+  const generateTaskId = () => {
+    return Math.floor(Math.random() * 90000) + 10000;
   };
 
-  const isOverdue = (project: Project) => {
-    if (!project.target_date || project.status === "concluido") return false;
-    return new Date(project.target_date) < new Date();
-  };
-
-  const getDaysUntilTarget = (project: Project) => {
-    if (!project.target_date) return null;
-    const target = new Date(project.target_date);
-    const today = new Date();
-    const diffTime = target.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  const isOverdue = (task: ProjectTask) => {
+    if (!task.due_date || task.status === "done") return false;
+    return new Date(task.due_date) < new Date();
   };
 
   return (
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="w-full overflow-x-auto bg-gray-50 p-4">
-          <div className="flex gap-1 min-w-max" style={{ minWidth: 'fit-content' }}>
-            {statusColumns.map((column) => (
-              <div key={column.id} className="flex flex-col w-80 bg-white border border-gray-200">
-                {/* Header da Coluna */}
-                <div className="flex items-center justify-between p-3 border-b bg-gray-50">
-                  <h3 className="font-medium text-sm text-gray-700">{column.label}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                      {projectsByStatus[column.id]?.length || 0}
-                    </span>
-                    <Dialog open={newTaskDialogOpen} onOpenChange={setNewTaskDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="h-6 w-6 p-0"
-                          onClick={() => setSelectedProjectId(projectsByStatus[column.id]?.[0]?.id || "")}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </Button>
-                      </DialogTrigger>
-                    </Dialog>
-                  </div>
-                </div>
-                
-                <Droppable droppableId={column.id}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`flex-1 min-h-[600px] p-2 space-y-2 transition-colors ${
-                        snapshot.isDraggingOver ? 'bg-blue-50' : 'bg-gray-50'
-                      }`}
-                    >
-                      {projectsByStatus[column.id]?.map((project, index) => {
-                        const progress = calculateProgress(project);
-                        const daysUntilTarget = getDaysUntilTarget(project);
-                        
-                        return (
-                          <Draggable key={project.id} draggableId={project.id} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`bg-white border ${column.color} rounded shadow-sm transition-all ${
-                                  snapshot.isDragging ? 'shadow-lg rotate-2' : 'hover:shadow-md'
-                                } cursor-pointer p-3`}
-                                onClick={() => onProjectSelect?.(project)}
-                              >
-                                {/* Drag Handle */}
-                                <div 
-                                  {...provided.dragHandleProps}
-                                  className="flex items-center justify-between mb-2"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <GripVertical className="h-4 w-4 text-gray-400" />
-                                    <span className="text-red-600 text-sm font-medium">🐞 {Math.floor(Math.random() * 90000) + 10000}</span>
-                                  </div>
-                                  <MoreVertical className="h-4 w-4 text-gray-400" />
-                                </div>
+        <div className="w-full h-[calc(100vh-200px)] bg-background">
+          {/* Header do Board */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <div className="flex items-center gap-4">
+              <h2 className="text-xl font-semibold">Development Board</h2>
+              {selectedProject && (
+                <Badge variant="outline">{selectedProject.name}</Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={() => handleOpenCreateDialog("todo")}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Task
+              </Button>
+            </div>
+          </div>
 
-                                {/* Header do Card */}
-                                <div className="flex items-start gap-2 mb-2">
-                                  <div className="flex-1">
-                                    <h4 className="text-sm font-medium text-gray-900 line-clamp-2 mb-2">
-                                      {project.name.toUpperCase()}
+          {/* Board Columns */}
+          <div className="flex gap-0 h-full overflow-x-auto">
+            {taskStatusColumns.map((column) => {
+              const Icon = column.icon;
+              const columnTasks = tasksByStatus[column.id] || [];
+              
+              return (
+                <div key={column.id} className="flex flex-col w-80 min-w-80 border-r border-border">
+                  {/* Column Header */}
+                  <div className={`flex items-center justify-between p-4 ${column.bgColor} border-b`}>
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4" />
+                      <h3 className="font-medium text-sm">{column.label}</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {columnTasks.length}
+                      </Badge>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      onClick={() => handleOpenCreateDialog(column.id)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  
+                  <Droppable droppableId={column.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`flex-1 p-3 space-y-3 overflow-y-auto transition-colors ${
+                          snapshot.isDraggingOver ? 'bg-blue-50' : column.bgColor
+                        }`}
+                        style={{ minHeight: '500px' }}
+                      >
+                        {columnTasks.map((task, index) => {
+                          const taskType = getTaskTypeInfo(task.type);
+                          const priorityInfo = getPriorityInfo(task.priority);
+                          const TaskTypeIcon = taskType.icon;
+                          
+                          return (
+                            <Draggable key={task.id} draggableId={task.id} index={index}>
+                              {(provided, snapshot) => (
+                                <Card
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`transition-all hover:shadow-md cursor-pointer ${
+                                    snapshot.isDragging ? 'shadow-lg rotate-1' : ''
+                                  } ${isOverdue(task) ? 'border-red-300 bg-red-50' : 'bg-white'}`}
+                                >
+                                  <CardContent className="p-3">
+                                    {/* Drag Handle */}
+                                    <div 
+                                      {...provided.dragHandleProps}
+                                      className="flex items-center justify-between mb-3"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <GripVertical className="h-4 w-4 text-gray-400" />
+                                        <span className="text-sm font-mono text-gray-500">
+                                          ID #{generateTaskId()}
+                                        </span>
+                                      </div>
+                                      <MoreVertical className="h-4 w-4 text-gray-400" />
+                                    </div>
+
+                                    {/* Task Title */}
+                                    <h4 className="font-medium text-sm mb-2 line-clamp-2">
+                                      {task.title}
                                     </h4>
-                                    
-                                    {project.description && (
-                                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                                        {project.description}
+
+                                    {/* Task Description */}
+                                    {task.description && (
+                                      <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+                                        {task.description}
                                       </p>
                                     )}
 
-                                    {/* Status Badge */}
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        ● {column.label}
-                                      </span>
-                                    </div>
-
-                                    {/* Assignee */}
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <Avatar className="h-5 w-5">
-                                        <AvatarFallback className="text-xs bg-blue-500 text-white">
-                                          {project.created_by?.charAt(0)?.toUpperCase() || "?"}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <span className="text-xs text-gray-600">
-                                        {project.assigned_architect || project.created_by || "Não atribuído"}
-                                      </span>
-                                    </div>
-
-                                    {/* Tags/Labels */}
-                                    <div className="flex items-center gap-1 mb-2">
-                                      <Badge className="bg-blue-600 text-white text-xs px-2 py-1">
-                                        PROJETO
+                                    {/* Task Type & Priority */}
+                                    <div className="flex items-center gap-2 mb-3">
+                                      <Badge className={`text-xs ${taskType.color}`}>
+                                        <TaskTypeIcon className="h-3 w-3 mr-1" />
+                                        {taskType.label}
                                       </Badge>
-                                      {project.priority && project.priority >= 4 && (
-                                        <Badge variant="destructive" className="text-xs px-2 py-1">
-                                          ALTA PRIORIDADE
-                                        </Badge>
+                                      <Badge 
+                                        variant="outline" 
+                                        className={`text-xs ${priorityInfo.color}`}
+                                      >
+                                        {priorityInfo.label}
+                                      </Badge>
+                                    </div>
+
+                                    {/* Task Meta */}
+                                    <div className="space-y-2">
+                                      {/* Assignee */}
+                                      {task.assigned_to && (
+                                        <div className="flex items-center gap-2">
+                                          <Avatar className="h-5 w-5">
+                                            <AvatarFallback className="text-xs">
+                                              {task.assigned_to.charAt(0).toUpperCase()}
+                                            </AvatarFallback>
+                                          </Avatar>
+                                          <span className="text-xs text-gray-600">
+                                            {task.assigned_to}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {/* Due Date */}
+                                      {task.due_date && (
+                                        <div className={`flex items-center gap-1 text-xs ${
+                                          isOverdue(task) ? 'text-red-600' : 'text-gray-600'
+                                        }`}>
+                                          <Calendar className="h-3 w-3" />
+                                          <span>{formatDate(task.due_date)}</span>
+                                          {isOverdue(task) && (
+                                            <AlertTriangle className="h-3 w-3 text-red-600" />
+                                          )}
+                                        </div>
+                                      )}
+
+                                      {/* Estimated Hours */}
+                                      {task.estimated_hours && task.estimated_hours > 0 && (
+                                        <div className="flex items-center gap-1 text-xs text-gray-600">
+                                          <Clock className="h-3 w-3" />
+                                          <span>{task.estimated_hours}h estimadas</span>
+                                        </div>
+                                      )}
+
+                                      {/* Actual Hours */}
+                                      {task.actual_hours && task.actual_hours > 0 && (
+                                        <div className="flex items-center gap-1 text-xs text-gray-600">
+                                          <Target className="h-3 w-3" />
+                                          <span>{task.actual_hours}h trabalhadas</span>
+                                        </div>
                                       )}
                                     </div>
 
-                                    {/* Progress */}
-                                    <div className="mb-2">
-                                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                                        <span>Progresso</span>
-                                        <span>{progress}%</span>
+                                    {/* Actions */}
+                                    <div className="flex items-center justify-between mt-3 pt-2 border-t">
+                                      <div className="flex items-center gap-1">
+                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                                          <MessageSquare className="h-3 w-3" />
+                                        </Button>
+                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                                          <GitBranch className="h-3 w-3" />
+                                        </Button>
+                                        <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                                          <FileText className="h-3 w-3" />
+                                        </Button>
                                       </div>
-                                      <Progress value={progress} className="h-2" />
+                                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                                        <Edit className="h-3 w-3" />
+                                      </Button>
                                     </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+                            </Draggable>
+                          );
+                        })}
+                        
+                        {provided.placeholder}
 
-                                    {/* Target Date */}
-                                    {project.target_date && (
-                                      <div className={`text-xs mb-2 flex items-center gap-1 ${
-                                        isOverdue(project) ? 'text-red-600' : 'text-gray-600'
-                                      }`}>
-                                        <Calendar className="h-3 w-3" />
-                                        <span className="font-medium">Meta:</span> {formatDate(project.target_date)}
-                                        {daysUntilTarget !== null && (
-                                          <span className={`ml-1 ${daysUntilTarget < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                            ({daysUntilTarget < 0 ? 'Atrasado' : `${daysUntilTarget} dias`})
-                                          </span>
-                                        )}
-                                      </div>
-                                    )}
-
-                                    {/* ROI Estimate */}
-                                    {project.estimated_roi && (
-                                      <div className="text-xs text-gray-600 mb-2 flex items-center gap-1">
-                                        <TrendingUp className="h-3 w-3" />
-                                        <span className="font-medium">ROI:</span> {formatCurrency(project.estimated_roi)}
-                                      </div>
-                                    )}
-
-                                    {/* Methodology */}
-                                    {project.methodology && (
-                                      <div className="mt-2 text-xs text-gray-600">
-                                        <span className="font-medium">Metodologia:</span>
-                                        <span className="text-purple-600 ml-1 uppercase">{project.methodology}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        );
-                      })}
-                      
-                      {provided.placeholder}
-
-                      {/* Botão Add New Item aprimorado */}
-                      <Dialog open={newTaskDialogOpen} onOpenChange={setNewTaskDialogOpen}>
-                        <DialogTrigger asChild>
-                          <div 
-                            className="p-4 border-2 border-dashed border-gray-300 rounded text-center hover:bg-gray-100 hover:border-blue-400 cursor-pointer transition-colors"
-                            onClick={() => setSelectedProjectId(projectsByStatus[column.id]?.[0]?.id || "")}
-                          >
-                            <Plus className="h-5 w-5 mx-auto mb-1 text-gray-400" />
-                            <span className="text-gray-500 text-sm font-medium">Adicionar Task</span>
+                        {/* Add Task Button */}
+                        <Button
+                          variant="outline"
+                          className="w-full border-dashed h-12 text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                          onClick={() => handleOpenCreateDialog(column.id)}
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar Task
+                        </Button>
+                        
+                        {/* Empty State */}
+                        {columnTasks.length === 0 && (
+                          <div className="text-center py-8 text-gray-400">
+                            <Icon className="h-8 w-8 mx-auto mb-2" />
+                            <p className="text-sm">Nenhuma task</p>
                           </div>
-                        </DialogTrigger>
-                      </Dialog>
-                      
-                      {/* Empty State */}
-                      {projectsByStatus[column.id]?.length === 0 && (
-                        <div className="text-center py-8 text-gray-500 text-sm">
-                          <Target className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                          <p>Nenhum projeto nesta coluna</p>
-                          <p className="text-xs mt-1">Arraste projetos para cá</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </Droppable>
-              </div>
-            ))}
+                        )}
+                      </div>
+                    )}
+                  </Droppable>
+                </div>
+              );
+            })}
           </div>
         </div>
       </DragDropContext>
 
-      {/* Dialog para criar nova task */}
+      {/* Create Task Dialog */}
       <Dialog open={newTaskDialogOpen} onOpenChange={setNewTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Criar Nova Task</DialogTitle>
+            <DialogDescription>
+              Adicione uma nova task ao projeto e defina seus detalhes
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Projeto</label>
-              <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um projeto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="title">Título da Task *</Label>
+                <Input
+                  id="title"
+                  placeholder="Ex: Implementar autenticação OAuth"
+                  value={newTaskData.title}
+                  onChange={(e) => setNewTaskData({ ...newTaskData, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="type">Tipo de Task</Label>
+                <Select 
+                  value={newTaskData.type} 
+                  onValueChange={(value) => setNewTaskData({ ...newTaskData, type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {taskTypes.map((type) => {
+                      const Icon = type.icon;
+                      return (
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4" />
+                            {type.label}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium">Título</label>
-              <Input
-                value={newTaskData.title}
-                onChange={(e) => setNewTaskData(prev => ({ ...prev, title: e.target.value }))}
-                placeholder="Digite o título da task"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Descrição</label>
+              <Label htmlFor="description">Descrição</Label>
               <Textarea
+                id="description"
+                placeholder="Descreva os detalhes da task..."
                 value={newTaskData.description}
-                onChange={(e) => setNewTaskData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Descreva os detalhes da task"
+                onChange={(e) => setNewTaskData({ ...newTaskData, description: e.target.value })}
                 rows={3}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium">Tipo</label>
-                <Select value={newTaskData.type} onValueChange={(value) => setNewTaskData(prev => ({ ...prev, type: value }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="development">Desenvolvimento</SelectItem>
-                    <SelectItem value="testing">Teste</SelectItem>
-                    <SelectItem value="documentation">Documentação</SelectItem>
-                    <SelectItem value="design">Design</SelectItem>
-                    <SelectItem value="research">Pesquisa</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium">Prioridade</label>
+                <Label htmlFor="priority">Prioridade</Label>
                 <Select 
                   value={newTaskData.priority.toString()} 
-                  onValueChange={(value) => setNewTaskData(prev => ({ ...prev, priority: parseInt(value) }))}
+                  onValueChange={(value) => setNewTaskData({ ...newTaskData, priority: parseInt(value) })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="1">Muito Baixa</SelectItem>
-                    <SelectItem value="2">Baixa</SelectItem>
-                    <SelectItem value="3">Média</SelectItem>
-                    <SelectItem value="4">Alta</SelectItem>
-                    <SelectItem value="5">Crítica</SelectItem>
+                    {priorityLevels.map((priority) => (
+                      <SelectItem key={priority.value} value={priority.value.toString()}>
+                        <span className={priority.color}>{priority.label}</span>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label htmlFor="estimated_hours">Horas Estimadas</Label>
+                <Input
+                  id="estimated_hours"
+                  type="number"
+                  placeholder="8"
+                  value={newTaskData.estimated_hours}
+                  onChange={(e) => setNewTaskData({ ...newTaskData, estimated_hours: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium">Estimativa (horas)</label>
-              <Input
-                type="number"
-                value={newTaskData.estimated_hours}
-                onChange={(e) => setNewTaskData(prev => ({ ...prev, estimated_hours: parseFloat(e.target.value) || 0 }))}
-                placeholder="0"
-                min="0"
-                step="0.5"
-              />
-            </div>
-
-            <div className="flex gap-2 justify-end">
+            <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setNewTaskDialogOpen(false)}>
                 Cancelar
               </Button>
