@@ -1,65 +1,211 @@
+
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle } from "lucide-react";
+import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle, Filter, Search, Settings } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import ProjectKanban from "@/components/ProjectKanban";
+import ProjectGridView from "@/components/ProjectGridView";
+import ProjectFilters from "@/components/ProjectFilters";
+import CreateProjectDialog from "@/components/CreateProjectDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 
 const Projetos = () => {
   const [viewMode, setViewMode] = useState<"kanban" | "grid">("kanban");
-  const { projects, loading } = useProjects();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedFilters, setSelectedFilters] = useState({
+    status: [],
+    priority: [],
+    methodology: [],
+  });
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  const { projects, loading, createProject, updateProject } = useProjects();
+
+  // Filtrar projetos baseado na busca e filtros
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = selectedFilters.status.length === 0 || 
+                         selectedFilters.status.includes(project.status);
+    
+    const matchesPriority = selectedFilters.priority.length === 0 || 
+                           selectedFilters.priority.includes(project.priority?.toString());
+    
+    const matchesMethodology = selectedFilters.methodology.length === 0 || 
+                              selectedFilters.methodology.includes(project.methodology);
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesMethodology;
+  });
 
   const statusCounts = {
-    total: projects.length,
-    desenvolvimento: projects.filter(p => p.status === "desenvolvimento").length,
-    homologacao: projects.filter(p => p.status === "homologacao").length,
-    planejamento: projects.filter(p => p.status === "planejamento").length,
-    ideacao: projects.filter(p => p.status === "ideacao").length,
+    total: filteredProjects.length,
+    ideacao: filteredProjects.filter(p => p.status === "ideacao").length,
+    planejamento: filteredProjects.filter(p => p.status === "planejamento").length,
+    desenvolvimento: filteredProjects.filter(p => p.status === "desenvolvimento").length,
+    homologacao: filteredProjects.filter(p => p.status === "homologacao").length,
+    producao: filteredProjects.filter(p => p.status === "producao").length,
+    suspenso: filteredProjects.filter(p => p.status === "suspenso").length,
+    concluido: filteredProjects.filter(p => p.status === "concluido").length,
   };
 
-  const totalEstimatedROI = projects.reduce((sum, project) => 
+  const totalEstimatedROI = filteredProjects.reduce((sum, project) => 
     sum + (project.estimated_roi || 0), 0
   );
 
-  const highPriorityProjects = projects.filter(p => (p.priority || 0) >= 4).length;
+  const highPriorityProjects = filteredProjects.filter(p => (p.priority || 0) >= 4).length;
+  const overdueProjects = filteredProjects.filter(p => {
+    if (!p.target_date) return false;
+    return new Date(p.target_date) < new Date() && p.status !== "concluido";
+  }).length;
 
   return (
     <div className="min-h-screen bg-background p-6 animate-fade-in">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-start">
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Projetos RPA
-            </h1>
-            <p className="text-muted-foreground">
-              Gestão ágil de projetos de automação - Metodologia Kanban
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <div className="flex gap-1 bg-muted rounded-lg p-1">
+        {/* Header com Governança */}
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-between items-start">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                Gestão de Projetos RPA
+              </h1>
+              <p className="text-muted-foreground">
+                Governança ágil com metodologia Kanban - Controle completo do ciclo de vida
+              </p>
+            </div>
+            <div className="flex gap-2">
               <Button
-                variant={viewMode === "kanban" ? "default" : "ghost"}
+                variant="outline"
                 size="sm"
-                onClick={() => setViewMode("kanban")}
+                onClick={() => setShowFilters(!showFilters)}
               >
-                <Kanban className="h-4 w-4" />
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
               </Button>
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("grid")}
+              
+              <div className="flex gap-1 bg-muted rounded-lg p-1">
+                <Button
+                  variant={viewMode === "kanban" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("kanban")}
+                >
+                  <Kanban className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("grid")}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <Button 
+                className="bg-gradient-primary"
+                onClick={() => setShowCreateDialog(true)}
               >
-                <LayoutGrid className="h-4 w-4" />
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Projeto
               </Button>
             </div>
-            <Button className="bg-gradient-primary">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Projeto
-            </Button>
           </div>
+
+          {/* Barra de Busca e Controles */}
+          <div className="flex gap-4 items-center">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar projetos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            <Badge variant="outline" className="text-sm">
+              {filteredProjects.length} de {projects.length} projetos
+            </Badge>
+          </div>
+
+          {/* Filtros Expandidos */}
+          {showFilters && (
+            <ProjectFilters
+              selectedFilters={selectedFilters}
+              onFiltersChange={setSelectedFilters}
+            />
+          )}
+        </div>
+
+        {/* Indicadores de Governança */}
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card className="border-l-4 border-l-primary">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Target className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Projetos</p>
+                  <p className="text-2xl font-bold">{statusCounts.total}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-rpa">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-rpa/10 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-rpa" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Em Andamento</p>
+                  <p className="text-2xl font-bold">
+                    {statusCounts.desenvolvimento + statusCounts.homologacao}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-accent">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">ROI Estimado</p>
+                  <p className="text-xl font-bold">
+                    {new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    }).format(totalEstimatedROI)}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-destructive">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Em Atraso</p>
+                  <p className="text-2xl font-bold">{overdueProjects}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Conteúdo Principal */}
@@ -73,77 +219,23 @@ const Projetos = () => {
             <Skeleton className="h-96 w-full" />
           </div>
         ) : viewMode === "kanban" ? (
-          <ProjectKanban projects={projects} />
+          <ProjectKanban 
+            projects={filteredProjects} 
+            onProjectUpdate={updateProject}
+          />
         ) : (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Vista em Grid será implementada em breve</p>
-          </div>
+          <ProjectGridView 
+            projects={filteredProjects}
+            onProjectUpdate={updateProject}
+          />
         )}
 
-        {/* Estatísticas Rápidas */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Total de Projetos</p>
-                  <p className="text-xl font-bold">{statusCounts.total}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Em Desenvolvimento</p>
-                  <p className="text-xl font-bold">{statusCounts.desenvolvimento}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-rpa/10 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-rpa" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">ROI Estimado</p>
-                  <p className="text-xl font-bold">
-                    {new Intl.NumberFormat('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                      minimumFractionDigits: 0,
-                    }).format(totalEstimatedROI)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Alta Prioridade</p>
-                  <p className="text-xl font-bold">{highPriorityProjects}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Dialog de Criação */}
+        <CreateProjectDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          onCreateProject={createProject}
+        />
       </div>
     </div>
   );

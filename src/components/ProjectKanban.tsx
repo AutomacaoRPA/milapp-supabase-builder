@@ -1,3 +1,4 @@
+
 import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,10 @@ import {
   Users, 
   Target, 
   TrendingUp,
-  AlertTriangle
+  AlertTriangle,
+  Clock,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import { Project } from "@/hooks/useProjects";
 
@@ -20,13 +24,48 @@ interface ProjectKanbanProps {
 }
 
 const statusColumns = [
-  { id: "ideacao", label: "Ideação", color: "bg-blue-100 text-blue-800" },
-  { id: "planejamento", label: "Planejamento", color: "bg-yellow-100 text-yellow-800" },
-  { id: "desenvolvimento", label: "Desenvolvimento", color: "bg-primary/10 text-primary" },
-  { id: "homologacao", label: "Homologação", color: "bg-orange-100 text-orange-800" },
-  { id: "producao", label: "Produção", color: "bg-green-100 text-green-800" },
-  { id: "suspenso", label: "Suspenso", color: "bg-red-100 text-red-800" },
-  { id: "concluido", label: "Concluído", color: "bg-accent/10 text-accent" }
+  { 
+    id: "ideacao", 
+    label: "💡 Ideação", 
+    color: "bg-blue-100 text-blue-800 border-blue-200",
+    description: "Conceitos e validação inicial"
+  },
+  { 
+    id: "planejamento", 
+    label: "📋 Planejamento", 
+    color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    description: "Definição de escopo e recursos"
+  },
+  { 
+    id: "desenvolvimento", 
+    label: "⚙️ Desenvolvimento", 
+    color: "bg-primary/10 text-primary border-primary/20",
+    description: "Implementação e coding"
+  },
+  { 
+    id: "homologacao", 
+    label: "🧪 Homologação", 
+    color: "bg-orange-100 text-orange-800 border-orange-200",
+    description: "Testes e validação"
+  },
+  { 
+    id: "producao", 
+    label: "🚀 Produção", 
+    color: "bg-green-100 text-green-800 border-green-200",
+    description: "Deploy e monitoramento"
+  },
+  { 
+    id: "suspenso", 
+    label: "⏸️ Suspenso", 
+    color: "bg-red-100 text-red-800 border-red-200",
+    description: "Projetos pausados"
+  },
+  { 
+    id: "concluido", 
+    label: "✅ Concluído", 
+    color: "bg-accent/10 text-accent border-accent/20",
+    description: "Entregues com sucesso"
+  }
 ];
 
 const ProjectKanban = ({ projects, onProjectUpdate }: ProjectKanbanProps) => {
@@ -44,11 +83,15 @@ const ProjectKanban = ({ projects, onProjectUpdate }: ProjectKanbanProps) => {
     return "text-accent";
   };
 
+  const getPriorityIcon = (priority: number | null) => {
+    if (!priority || priority < 4) return AlertTriangle;
+    return priority >= 4 ? XCircle : CheckCircle;
+  };
+
   const getPriorityLabel = (priority: number | null) => {
     if (!priority) return "Não definida";
-    if (priority >= 4) return "Alta";
-    if (priority >= 3) return "Média";
-    return "Baixa";
+    const labels = ["", "Muito Baixa", "Baixa", "Média", "Alta", "Crítica"];
+    return labels[priority] || "Não definida";
   };
 
   const formatCurrency = (value: number | null) => {
@@ -67,7 +110,6 @@ const ProjectKanban = ({ projects, onProjectUpdate }: ProjectKanbanProps) => {
   };
 
   const calculateProgress = (project: Project) => {
-    // Simula progresso baseado no status
     const statusProgress = {
       ideacao: 10,
       planejamento: 25,
@@ -80,111 +122,211 @@ const ProjectKanban = ({ projects, onProjectUpdate }: ProjectKanbanProps) => {
     return statusProgress[project.status] || 0;
   };
 
+  const isOverdue = (project: Project) => {
+    if (!project.target_date || project.status === "concluido") return false;
+    return new Date(project.target_date) < new Date();
+  };
+
+  const getDaysUntilTarget = (project: Project) => {
+    if (!project.target_date) return null;
+    const target = new Date(project.target_date);
+    const today = new Date();
+    const diffTime = target.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6 min-h-[600px]">
+    <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7 gap-6 min-h-[600px]">
       {statusColumns.map((column) => (
         <div key={column.id} className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-lg">{column.label}</h3>
-            <Badge variant="secondary" className="text-xs">
-              {projectsByStatus[column.id]?.length || 0}
-            </Badge>
+          {/* Header da Coluna */}
+          <div className={`p-4 rounded-lg border-2 ${column.color}`}>
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-lg">{column.label}</h3>
+              <Badge variant="secondary" className="text-sm font-bold">
+                {projectsByStatus[column.id]?.length || 0}
+              </Badge>
+            </div>
+            <p className="text-sm opacity-80">{column.description}</p>
           </div>
           
+          {/* Cards dos Projetos */}
           <div className="space-y-4 min-h-[500px] p-2 rounded-lg bg-muted/20">
-            {projectsByStatus[column.id]?.map((project, index) => (
-              <Card 
-                key={project.id} 
-                className="transition-all hover:shadow-primary animate-slide-up cursor-move" 
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2 flex-1">
-                      <CardTitle className="text-base leading-tight">
-                        {project.name}
-                      </CardTitle>
-                      <Badge className={column.color}>
-                        {column.label}
-                      </Badge>
+            {projectsByStatus[column.id]?.map((project, index) => {
+              const PriorityIcon = getPriorityIcon(project.priority);
+              const daysUntilTarget = getDaysUntilTarget(project);
+              const isUrgent = daysUntilTarget !== null && daysUntilTarget <= 7 && daysUntilTarget > 0;
+              
+              return (
+                <Card 
+                  key={project.id} 
+                  className={`transition-all hover:shadow-lg animate-slide-up cursor-pointer ${
+                    isOverdue(project) ? "border-destructive/50 bg-destructive/5" :
+                    isUrgent ? "border-rpa/50 bg-rpa/5" : ""
+                  }`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2">
+                          <CardTitle className="text-base leading-tight">
+                            {project.name}
+                          </CardTitle>
+                          {(isOverdue(project) || isUrgent) && (
+                            <Clock className={`h-4 w-4 ${
+                              isOverdue(project) ? "text-destructive" : "text-rpa"
+                            }`} />
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-wrap gap-1">
+                          <Badge className={column.color} variant="outline">
+                            {column.label.replace(/[^\w\s]/gi, '').trim()}
+                          </Badge>
+                          {project.methodology && (
+                            <Badge variant="outline" className="text-xs">
+                              {project.methodology}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {project.description && (
-                    <CardDescription className="line-clamp-2 text-sm">
-                      {project.description}
-                    </CardDescription>
-                  )}
-                </CardHeader>
+                    {project.description && (
+                      <CardDescription className="line-clamp-2 text-sm">
+                        {project.description}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
 
-                <CardContent className="space-y-3 pt-0">
-                  {/* Progress */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span>Progresso</span>
-                      <span>{calculateProgress(project)}%</span>
+                  <CardContent className="space-y-3 pt-0">
+                    {/* Progress com Governança */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs">
+                        <span>Progresso</span>
+                        <span className="font-medium">{calculateProgress(project)}%</span>
+                      </div>
+                      <Progress value={calculateProgress(project)} className="h-2" />
                     </div>
-                    <Progress value={calculateProgress(project)} className="h-2" />
-                  </div>
 
-                  {/* Métricas */}
-                  <div className="grid grid-cols-1 gap-3 text-xs">
-                    <div className="flex items-center gap-2">
-                      <Target className="h-3 w-3 text-accent" />
-                      <span>Complexidade: {project.complexity_score || "N/A"}</span>
+                    {/* Métricas de Governança */}
+                    <div className="grid grid-cols-1 gap-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-3 w-3 text-accent" />
+                          <span>Complexidade:</span>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          {project.complexity_score || "N/A"}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <PriorityIcon 
+                            className={`h-3 w-3 ${getPriorityColor(project.priority)}`} 
+                          />
+                          <span>Prioridade:</span>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${getPriorityColor(project.priority)}`}
+                        >
+                          {getPriorityLabel(project.priority)}
+                        </Badge>
+                      </div>
                     </div>
-                    
+
+                    {/* ROI */}
                     {project.estimated_roi && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 p-2 bg-rpa/5 rounded-lg">
                         <TrendingUp className="h-3 w-3 text-rpa" />
-                        <span>{formatCurrency(project.estimated_roi)}</span>
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground">ROI Estimado</p>
+                          <p className="text-sm font-medium text-rpa">
+                            {formatCurrency(project.estimated_roi)}
+                          </p>
+                        </div>
                       </div>
                     )}
                     
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
-                      <span>{formatDate(project.target_date)}</span>
+                    {/* Timeline */}
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">Meta:</span>
+                        <span className={
+                          isOverdue(project) ? "text-destructive font-medium" :
+                          isUrgent ? "text-rpa font-medium" : ""
+                        }>
+                          {formatDate(project.target_date)}
+                        </span>
+                      </div>
+                      
+                      {daysUntilTarget !== null && (
+                        <div className="text-xs">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${
+                              isOverdue(project) ? "border-destructive text-destructive" :
+                              isUrgent ? "border-rpa text-rpa" : 
+                              "text-muted-foreground"
+                            }`}
+                          >
+                            {isOverdue(project) 
+                              ? `${Math.abs(daysUntilTarget)} dias em atraso`
+                              : `${daysUntilTarget} dias restantes`
+                            }
+                          </Badge>
+                        </div>
+                      )}
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle 
-                        className={`h-3 w-3 ${getPriorityColor(project.priority)}`} 
-                      />
-                      <span className={getPriorityColor(project.priority)}>
-                        {getPriorityLabel(project.priority)}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Team - Placeholder para futuras implementações */}
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs">Equipe</span>
+                    {/* Team */}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Equipe</span>
+                      </div>
+                      <div className="flex -space-x-1">
+                        <Avatar className="h-5 w-5 border-2 border-background">
+                          <AvatarFallback className="text-xs">
+                            {project.created_by?.slice(0, 2).toUpperCase() || "??"}
+                          </AvatarFallback>
+                        </Avatar>
+                        {project.assigned_architect && (
+                          <Avatar className="h-5 w-5 border-2 border-background">
+                            <AvatarFallback className="text-xs bg-primary/10">
+                              AR
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        {project.product_owner && (
+                          <Avatar className="h-5 w-5 border-2 border-background">
+                            <AvatarFallback className="text-xs bg-rpa/10">
+                              PO
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex -space-x-1">
-                      <Avatar className="h-5 w-5 border-2 border-background">
-                        <AvatarFallback className="text-xs">
-                          {project.created_by?.slice(0, 2).toUpperCase() || "??"}
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                  </div>
-
-                  {/* Metodologia */}
-                  {project.methodology && (
-                    <div className="flex justify-between items-center pt-1">
-                      <span className="text-xs text-muted-foreground">Metodologia</span>
-                      <Badge variant="outline" className="text-xs">
-                        {project.methodology}
-                      </Badge>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
+            
+            {/* Drop Zone para Kanban */}
+            {projectsByStatus[column.id]?.length === 0 && (
+              <div className="flex items-center justify-center h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Arraste projetos aqui
+                </p>
+              </div>
+            )}
           </div>
         </div>
       ))}
