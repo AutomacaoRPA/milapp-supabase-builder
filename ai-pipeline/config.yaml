@@ -1,0 +1,249 @@
+# MILAPP - Configuração do Pipeline IA-IA
+# Integração automática entre Lovable IA e Cursor IA
+
+# Configurações das IAs
+lovable:
+  api_key: "${LOVABLE_API_KEY}"
+  base_url: "https://api.lovable.com"
+  model: "gpt-4"
+  max_tokens: 4000
+  temperature: 0.3
+  timeout: 300
+
+cursor:
+  api_key: "${CURSOR_API_KEY}"
+  base_url: "https://api.cursor.com"
+  model: "gpt-4"
+  max_tokens: 4000
+  temperature: 0.2
+  timeout: 300
+
+# Configurações Git
+git:
+  repo_path: "."
+  branch: "main"
+  auto_commit: true
+  commit_message_template: "feat: {task_description} - Aprovado via IA-IA Pipeline"
+  push_after_commit: true
+
+# Configurações de Deploy
+deployment:
+  auto_deploy: true
+  url: "https://deploy.milapp.com"
+  api_key: "${DEPLOY_API_KEY}"
+  environments:
+    - name: "development"
+      auto_deploy: true
+    - name: "staging"
+      auto_deploy: false
+      requires_approval: true
+    - name: "production"
+      auto_deploy: false
+      requires_approval: true
+
+# Configurações de Qualidade
+quality:
+  min_score: 70
+  require_tests_passing: true
+  require_security_scan: true
+  require_performance_tests: true
+  test_coverage_minimum: 80
+  security_score_minimum: 90
+
+# Configurações de Testes
+testing:
+  unit_tests:
+    enabled: true
+    framework: "pytest"
+    timeout: 300
+  integration_tests:
+    enabled: true
+    framework: "pytest"
+    timeout: 600
+  security_scan:
+    enabled: true
+    tools: ["bandit", "safety", "semgrep"]
+    timeout: 300
+  performance_tests:
+    enabled: true
+    framework: "locust"
+    timeout: 600
+
+# Configurações de Notificação
+notifications:
+  email:
+    enabled: true
+    smtp_host: "${SMTP_HOST}"
+    smtp_port: 587
+    smtp_user: "${SMTP_USER}"
+    smtp_password: "${SMTP_PASSWORD}"
+    from_email: "milapp-ai@company.com"
+    to_emails: ["team@company.com"]
+  
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channel: "#milapp-ai"
+  
+  teams:
+    enabled: true
+    webhook_url: "${TEAMS_WEBHOOK_URL}"
+
+# Configurações de Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/ai-pipeline.log"
+  max_size: "10MB"
+  backup_count: 5
+
+# Configurações de Cache
+cache:
+  enabled: true
+  redis_url: "${REDIS_URL}"
+  ttl: 3600  # 1 hora
+
+# Configurações de Rate Limiting
+rate_limiting:
+  enabled: true
+  requests_per_minute: 60
+  requests_per_hour: 1000
+
+# Configurações de Segurança
+security:
+  encrypt_api_keys: true
+  encryption_key: "${ENCRYPTION_KEY}"
+  audit_logging: true
+  audit_file: "logs/audit.log"
+
+# Configurações de Monitoramento
+monitoring:
+  enabled: true
+  metrics_endpoint: "http://localhost:9090"
+  health_check_interval: 60
+  alert_on_failure: true
+
+# Templates de Prompts
+prompts:
+  lovable:
+    component_template: |
+      Crie um componente React/TypeScript para: {description}
+      
+      Requisitos:
+      - Seguir padrões do projeto MILAPP
+      - Usar Material-UI e Tailwind CSS
+      - Ser responsivo
+      - Incluir testes unitários
+      - Documentação JSDoc
+      
+      Contexto: {context}
+      Arquitetura: {architecture}
+    
+    api_template: |
+      Crie um endpoint FastAPI para: {description}
+      
+      Requisitos:
+      - Seguir padrões REST
+      - Validação com Pydantic
+      - Tratamento de erros
+      - Documentação OpenAPI
+      - Testes unitários
+      
+      Contexto: {context}
+      Modelos: {models}
+    
+    test_template: |
+      Crie testes para: {description}
+      
+      Requisitos:
+      - Testes unitários
+      - Testes de integração
+      - Mocks apropriados
+      - Cobertura > 80%
+      
+      Código: {code}
+  
+  cursor:
+    analysis_template: |
+      Analise os requisitos: {description}
+      
+      Forneça:
+      - Contexto do projeto
+      - Requisitos técnicos
+      - Arquitetura recomendada
+      - Padrões a seguir
+      - Dependências necessárias
+      - Estimativa de complexidade
+    
+    review_template: |
+      Revise o código gerado:
+      
+      Verifique:
+      - Qualidade do código
+      - Padrões do projeto
+      - Performance
+      - Segurança
+      - Manutenibilidade
+      - Sugestões de melhoria
+      
+      Código: {code}
+    
+    quality_template: |
+      Analise a qualidade do código:
+      
+      Métricas:
+      - Score geral (0-100)
+      - Complexidade
+      - Manutenibilidade
+      - Cobertura de testes
+      - Score de segurança
+      - Score de performance
+      
+      Código: {code}
+
+# Configurações de Workflow
+workflow:
+  steps:
+    - name: "analysis"
+      description: "Análise de requisitos com Cursor IA"
+      timeout: 300
+      retry_count: 3
+    
+    - name: "generation"
+      description: "Geração de código com Lovable IA"
+      timeout: 600
+      retry_count: 2
+    
+    - name: "review"
+      description: "Revisão e refinamento com Cursor IA"
+      timeout: 300
+      retry_count: 2
+    
+    - name: "testing"
+      description: "Execução de testes automatizados"
+      timeout: 900
+      retry_count: 1
+    
+    - name: "quality"
+      description: "Análise de qualidade"
+      timeout: 300
+      retry_count: 1
+    
+    - name: "approval"
+      description: "Preparação para aprovação"
+      timeout: 60
+      retry_count: 0
+
+# Configurações de Rollback
+rollback:
+  enabled: true
+  max_rollback_depth: 5
+  auto_rollback_on_failure: true
+  rollback_timeout: 300
+
+# Configurações de Backup
+backup:
+  enabled: true
+  backup_before_changes: true
+  backup_location: "backups/"
+  retention_days: 30 
