@@ -7,6 +7,29 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { MessageCircle, Bot, User, Paperclip, Send, Lightbulb, FileText, Image, Upload, Mic, Video, Download, Sparkles, Target, BarChart } from "lucide-react";
 
+interface MessageAttachment {
+  name: string;
+  type: string;
+  size: number;
+}
+
+interface MessageInsights {
+  automationPotential: number;
+  complexity: string;
+  estimatedROI: string;
+  timeToImplement: string;
+}
+
+interface ChatMessage {
+  id: number;
+  type: "system" | "user" | "assistant";
+  content: string;
+  timestamp: string;
+  attachments?: MessageAttachment[];
+  suggestions?: string[];
+  insights?: MessageInsights;
+}
+
 const ChatIA = () => {
   const [message, setMessage] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
@@ -15,7 +38,7 @@ const ChatIA = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
       type: "system",
@@ -55,7 +78,7 @@ const ChatIA = () => {
   const handleSendMessage = async () => {
     if (!message.trim() && uploadedFiles.length === 0) return;
 
-    const newMessage = {
+    const newMessage: ChatMessage = {
       id: messages.length + 1,
       type: "user",
       content: message || "📎 Arquivos anexados",
@@ -108,7 +131,7 @@ const ChatIA = () => {
         };
       }
 
-      const aiResponse = {
+      const aiResponse: ChatMessage = {
         id: messages.length + 2,
         type: "assistant",
         content: aiContent,
@@ -262,7 +285,7 @@ const ChatIA = () => {
                           {/* Anexos */}
                           {msg.attachments && msg.attachments.length > 0 && (
                             <div className="space-y-2">
-                              {msg.attachments.map((attachment: any, idx: number) => (
+                              {msg.attachments.map((attachment: MessageAttachment, idx: number) => (
                                 <div key={idx} className="flex items-center gap-2 p-2 bg-muted/50 rounded text-xs">
                                   <Paperclip className="h-3 w-3" />
                                   <span>{attachment.name}</span>
