@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Project } from "@/hooks/useProjects";
 import { ProjectFormData } from "@/types/forms";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -17,6 +18,8 @@ interface CreateProjectDialogProps {
 }
 
 const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProjectDialogProps) => {
+  const { user } = useAuth();
+  
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -33,6 +36,17 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Preenche automaticamente nome e email do usuário logado
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        responsible_name: user.user_metadata?.full_name || user.email?.split('@')[0] || "",
+        responsible_email: user.email || "",
+      }));
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,14 +66,14 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
         product_owner: null,
       });
       
-      // Reset form
+      // Reset form mas mantém dados do usuário
       setFormData({
         name: "",
         description: "",
         category: "",
         expected_impact: "",
-        responsible_name: "",
-        responsible_email: "",
+        responsible_name: user?.user_metadata?.full_name || user?.email?.split('@')[0] || "",
+        responsible_email: user?.email || "",
         status: "ideacao",
         priority: 3,
         methodology: "kanban",
