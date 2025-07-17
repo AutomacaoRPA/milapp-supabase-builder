@@ -16,9 +16,15 @@ const ProjectStatusColumns = ({ projects, onProjectUpdate, onProjectSelect }: Pr
   const statusConfig = {
     ideacao: {
       title: "Captação de Ideias",
-      color: "bg-purple-100 border-purple-300",
-      headerColor: "bg-purple-50",
+      color: "bg-slate-100 border-slate-300",
+      headerColor: "bg-slate-50",
       count: projects.filter(p => p.status === "ideacao").length
+    },
+    qualidade_processos: {
+      title: "Qualidade de Processos",
+      color: "bg-violet-100 border-violet-300",
+      headerColor: "bg-violet-50",
+      count: projects.filter(p => p.status === "qualidade_processos").length
     },
     planejamento: {
       title: "Priorização",
@@ -26,41 +32,84 @@ const ProjectStatusColumns = ({ projects, onProjectUpdate, onProjectSelect }: Pr
       headerColor: "bg-blue-50",
       count: projects.filter(p => p.status === "planejamento").length
     },
-    desenvolvimento: {
-      title: "Em Desenvolvimento",
+    hipotese_formulada: {
+      title: "Hipótese Formulada",
+      color: "bg-purple-100 border-purple-300",
+      headerColor: "bg-purple-50",
+      count: projects.filter(p => p.status === "hipotese_formulada").length
+    },
+    analise_viabilidade: {
+      title: "Análise de Viabilidade",
       color: "bg-yellow-100 border-yellow-300",
       headerColor: "bg-yellow-50",
-      count: projects.filter(p => p.status === "desenvolvimento").length
+      count: projects.filter(p => p.status === "analise_viabilidade").length
     },
-    homologacao: {
-      title: "Homologação",
+    prototipo_rapido: {
+      title: "Protótipo Rápido",
       color: "bg-orange-100 border-orange-300",
       headerColor: "bg-orange-50",
-      count: projects.filter(p => p.status === "homologacao").length
+      count: projects.filter(p => p.status === "prototipo_rapido").length
     },
-    producao: {
-      title: "Finalizadas",
+    validacao_prototipo: {
+      title: "Validação do Protótipo",
+      color: "bg-pink-100 border-pink-300",
+      headerColor: "bg-pink-50",
+      count: projects.filter(p => p.status === "validacao_prototipo").length
+    },
+    mvp: {
+      title: "MVP",
+      color: "bg-indigo-100 border-indigo-300",
+      headerColor: "bg-indigo-50",
+      count: projects.filter(p => p.status === "mvp").length
+    },
+    teste_operacional: {
+      title: "Teste Operacional",
+      color: "bg-emerald-100 border-emerald-300",
+      headerColor: "bg-emerald-50",
+      count: projects.filter(p => p.status === "teste_operacional").length
+    },
+    escala_entrega: {
+      title: "Escala e Entrega",
+      color: "bg-cyan-100 border-cyan-300",
+      headerColor: "bg-cyan-50",
+      count: projects.filter(p => p.status === "escala_entrega").length
+    },
+    acompanhamento_pos_entrega: {
+      title: "Acompanhamento Pós-Entrega",
+      color: "bg-teal-100 border-teal-300",
+      headerColor: "bg-teal-50",
+      count: projects.filter(p => p.status === "acompanhamento_pos_entrega").length
+    },
+    sustentacao_evolucao: {
+      title: "Sustentação e Evolução",
       color: "bg-green-100 border-green-300",
       headerColor: "bg-green-50",
-      count: projects.filter(p => p.status === "producao").length + projects.filter(p => p.status === "concluido").length
+      count: projects.filter(p => p.status === "sustentacao_evolucao").length + projects.filter(p => p.status === "concluido").length
     }
   };
 
   const getProjectProgress = (project: Project) => {
     const progressMap = {
-      ideacao: 10,
-      planejamento: 20,
-      desenvolvimento: 40,
-      homologacao: 80,
-      producao: 100,
+      ideacao: 5,
+      qualidade_processos: 10,
+      planejamento: 15,
+      hipotese_formulada: 25,
+      analise_viabilidade: 35,
+      prototipo_rapido: 45,
+      validacao_prototipo: 55,
+      mvp: 65,
+      teste_operacional: 75,
+      escala_entrega: 85,
+      acompanhamento_pos_entrega: 95,
+      sustentacao_evolucao: 100,
       concluido: 100
     };
     return progressMap[project.status as keyof typeof progressMap] || 0;
   };
 
   const getProjectsByStatus = (status: string) => {
-    if (status === "producao") {
-      return projects.filter(p => p.status === "producao" || p.status === "concluido");
+    if (status === "sustentacao_evolucao") {
+      return projects.filter(p => p.status === "sustentacao_evolucao" || p.status === "concluido");
     }
     return projects.filter(p => p.status === status);
   };
