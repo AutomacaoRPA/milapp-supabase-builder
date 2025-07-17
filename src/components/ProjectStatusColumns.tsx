@@ -157,13 +157,7 @@ const ProjectStatusColumns = ({ projects, onProjectUpdate, onProjectSelect }: Pr
       destinationId: destination.droppableId
     });
     
-    // Atualiza imediatamente o estado local para feedback visual instantâneo
-    const updatedProjects = projects.map(p => 
-      p.id === project.id ? { ...p, status: newStatus as any } : p
-    );
-    
     try {
-      // Chama a função de atualização sem refetch automático
       await onProjectUpdate(project.id, { status: newStatus as any });
       
       const statusTitle = statusConfig[newStatus as keyof typeof statusConfig]?.title;
@@ -171,8 +165,6 @@ const ProjectStatusColumns = ({ projects, onProjectUpdate, onProjectSelect }: Pr
     } catch (error) {
       console.error("Erro ao atualizar projeto:", error);
       toast.error("Erro ao mover projeto");
-      // Em caso de erro, reverte o estado local
-      window.location.reload();
     }
   };
 

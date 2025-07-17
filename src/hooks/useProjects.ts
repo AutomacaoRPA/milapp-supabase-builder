@@ -22,6 +22,19 @@ export interface Project {
   updated_at: string | null;
 }
 
+export interface ProjectCreate {
+  name: string;
+  description?: string | null;
+  methodology?: string | null;
+  priority?: number | null;
+  estimated_roi?: number | null;
+  start_date?: string | null;
+  target_date?: string | null;
+  assigned_architect?: string | null;
+  product_owner?: string | null;
+  created_by: string;
+}
+
 export const useProjects = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +62,7 @@ export const useProjects = () => {
     }
   };
 
-  const createProject = async (projectData: Omit<Project, "id" | "created_at" | "updated_at">) => {
+  const createProject = async (projectData: ProjectCreate) => {
     try {
       const { data, error } = await supabase
         .from("projects")
@@ -78,6 +91,13 @@ export const useProjects = () => {
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
+      // Primeiro atualiza o estado local para feedback imediato
+      setProjects(prevProjects => 
+        prevProjects.map(project => 
+          project.id === id ? { ...project, ...updates } : project
+        )
+      );
+
       const { data, error } = await supabase
         .from("projects")
         .update(updates)
@@ -85,25 +105,55 @@ export const useProjects = () => {
         .select()
         .single();
 
-      if (error) throw error;
-
-      // Atualizar o estado local imediatamente
-      setProjects(prevProjects => 
-        prevProjects.map(project => 
-          project.id === id ? { ...project, ...updates } : project
-        )
-      );
+      if (error) {
+        // Reverte o estado local em caso de erro
+        setProjects(prevProjects => 
+          prevProjects.map(project => 
+            project.id === id ? { ...project, ...updates } : project
+          )
+        );
+        throw error;
+      }
 
       toast({
         title: "Sucesso",
         description: "Projeto atualizado com sucesso!",
       });
 
+      return data;
     } catch (error) {
       console.error("Erro ao atualizar projeto:", error);
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o projeto",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const deleteProject = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setProjects(prevProjects => 
+        prevProjects.filter(project => project.id !== id)
+      );
+
+      toast({
+        title: "Sucesso",
+        description: "Projeto excluído com sucesso!",
+      });
+    } catch (error) {
+      console.error("Erro ao excluir projeto:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o projeto",
         variant: "destructive",
       });
     }
@@ -119,5 +169,6 @@ export const useProjects = () => {
     fetchProjects,
     createProject,
     updateProject,
+    deleteProject,
   };
 };
