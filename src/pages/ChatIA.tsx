@@ -1,59 +1,154 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageCircle, Bot, User, Paperclip, Send, Lightbulb, FileText, Image } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { MessageCircle, Bot, User, Paperclip, Send, Lightbulb, FileText, Image, Upload, Mic, Video, Download, Sparkles, Target, BarChart } from "lucide-react";
 
 const ChatIA = () => {
   const [message, setMessage] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [analysisResults, setAnalysisResults] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: "system",
-      content: "Olá! Sou o assistente IA do MILAPP. Estou aqui para ajudar no levantamento de requisitos para automação RPA. Como posso ajudá-lo hoje?",
-      timestamp: "10:00"
+      content: "🤖 **MILAPP IA Discovery** iniciado!\n\nSou seu assistente especializado em automação RPA. Posso analisar:\n\n📄 **Documentos** (PDF, Word, Excel)\n🖼️ **Imagens** (fluxogramas, prints de tela)\n🎤 **Áudios** (gravações de reuniões)\n📹 **Vídeos** (demonstrações de processo)\n\nComo posso ajudá-lo hoje?",
+      timestamp: "10:00",
+      attachments: []
     },
     {
       id: 2,
       type: "user",
-      content: "Preciso automatizar o processo de aprovação de notas fiscais",
-      timestamp: "10:05"
+      content: "Preciso automatizar o processo de aprovação de notas fiscais. Temos muitos gargalos manuais.",
+      timestamp: "10:05",
+      attachments: []
     },
     {
       id: 3,
       type: "assistant",
-      content: "Perfeito! Vou ajudá-lo a mapear esse processo. Algumas perguntas para entender melhor:\n\n1. Qual o volume médio de notas fiscais por dia?\n2. Quais são os critérios de aprovação atuais?\n3. Existe algum sistema específico onde essas notas são processadas?\n4. Quem são os aprovadores no processo atual?",
+      content: "🎯 **Análise Inicial: Aprovação de Notas Fiscais**\n\nIdentifiquei um processo crítico para automação! Vou fazer algumas perguntas estratégicas:\n\n**📊 Volume e Complexidade:**\n• Qual o volume diário/mensal de notas?\n• Existe sazonalidade no processo?\n\n**🔍 Critérios de Aprovação:**\n• Quais validações são feitas?\n• Há alçadas de aprovação?\n\n**💻 Sistemas Envolvidos:**\n• ERP utilizado (SAP, Oracle, TOTVS?)\n• Sistema de workflow atual?\n\n**👥 Stakeholders:**\n• Quem são os aprovadores?\n• Existe hierarquia de aprovação?",
       timestamp: "10:06",
-      suggestions: ["Volume alto (>100/dia)", "Critérios complexos", "SAP/ERP específico", "Múltiplos aprovadores"]
+      suggestions: [
+        "Volume > 500 notas/mês",
+        "Critérios complexos com múltiplas validações", 
+        "Sistema SAP/ERP integrado",
+        "Múltiplos níveis de aprovação",
+        "Upload fluxograma do processo",
+        "Agendar reunião de discovery"
+      ],
+      insights: {
+        automationPotential: 85,
+        complexity: "Média",
+        estimatedROI: "R$ 25.000/mês",
+        timeToImplement: "6-8 semanas"
+      }
     }
   ]);
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
+  const handleSendMessage = async () => {
+    if (!message.trim() && uploadedFiles.length === 0) return;
 
     const newMessage = {
       id: messages.length + 1,
       type: "user",
-      content: message,
-      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      content: message || "📎 Arquivos anexados",
+      timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+      attachments: uploadedFiles.map(file => ({
+        name: file.name,
+        type: file.type,
+        size: file.size
+      }))
     };
 
     setMessages([...messages, newMessage]);
     setMessage("");
+    setUploadedFiles([]);
 
-    // Simular resposta da IA
+    // Simular análise IA avançada
     setTimeout(() => {
+      let aiContent = "";
+      let insights = null;
+
+      if (uploadedFiles.length > 0) {
+        aiContent = `🔍 **Análise Multimodal Concluída**\n\nArquivos processados: ${uploadedFiles.length}\n\n`;
+        
+        uploadedFiles.forEach(file => {
+          if (file.type.includes('image')) {
+            aiContent += "📸 **Análise de Imagem:**\n• Fluxograma identificado com 8 etapas\n• 3 pontos de decisão manuais\n• 2 gargalos críticos detectados\n\n";
+          } else if (file.type.includes('pdf')) {
+            aiContent += "📄 **Análise de Documento:**\n• Processo mapeado em 12 páginas\n• 15 atividades identificadas\n• 60% passível de automação\n\n";
+          } else if (file.type.includes('audio')) {
+            aiContent += "🎤 **Transcrição de Áudio:**\n• Reunião de 45 minutos transcrita\n• 8 requisitos funcionais extraídos\n• 3 regras de negócio identificadas\n\n";
+          }
+        });
+
+        aiContent += "✨ **Recomendações IA:**\n• Priorizar automação de validações\n• Implementar OCR para captura de dados\n• Criar dashboard de monitoramento\n• ROI estimado: R$ 35.000/mês";
+
+        insights = {
+          automationPotential: 92,
+          complexity: "Alta",
+          estimatedROI: "R$ 35.000/mês",
+          timeToImplement: "10-12 semanas"
+        };
+      } else {
+        aiContent = "💡 **Próximos Passos Sugeridos:**\n\n✅ Documentar processo AS-IS\n✅ Mapear sistemas envolvidos\n✅ Definir critérios de sucesso\n✅ Estimar benefícios quantitativos\n\n📋 **Gostaria que eu gere um documento de requisitos inicial?**";
+        
+        insights = {
+          automationPotential: 78,
+          complexity: "Média",
+          estimatedROI: "R$ 28.000/mês",
+          timeToImplement: "8-10 semanas"
+        };
+      }
+
       const aiResponse = {
         id: messages.length + 2,
         type: "assistant",
-        content: "Entendi! Baseado nas informações fornecidas, posso gerar um documento de requisitos inicial. Você gostaria que eu:\n\n✅ Crie um mapa do processo atual\n✅ Identifique pontos de automação\n✅ Sugira ferramentas RPA adequadas\n✅ Estime o ROI esperado",
+        content: aiContent,
         timestamp: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-        suggestions: ["Gerar mapa", "Análise de ROI", "Sugerir ferramentas", "Criar documento"]
+        suggestions: [
+          "Gerar documento PDD",
+          "Criar mapa de processo",
+          "Analisar ROI detalhado",
+          "Sugerir ferramentas RPA",
+          "Agendar workshop técnico"
+        ],
+        insights: insights
       };
       setMessages(prev => [...prev, aiResponse]);
-    }, 1500);
+    }, 2000);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    setUploadedFiles(prev => [...prev, ...files]);
+    
+    toast({
+      title: "Arquivos carregados",
+      description: `${files.length} arquivo(s) adicionado(s) para análise`,
+    });
+  };
+
+  const handleRecording = () => {
+    setIsRecording(!isRecording);
+    toast({
+      title: isRecording ? "Gravação parada" : "Gravação iniciada",
+      description: isRecording ? "Áudio salvo para análise" : "Gravando áudio...",
+    });
+  };
+
+  const generateDocument = (type: string) => {
+    toast({
+      title: "Documento gerado",
+      description: `${type} criado com base na conversa`,
+    });
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -61,9 +156,10 @@ const ChatIA = () => {
   };
 
   const quickActions = [
-    { icon: FileText, label: "Analisar Processo", color: "text-primary" },
-    { icon: Lightbulb, label: "Sugerir Automação", color: "text-accent" },
-    { icon: Image, label: "Upload Fluxograma", color: "text-rpa" }
+    { icon: FileText, label: "Gerar PDD", color: "text-primary", action: () => generateDocument("PDD") },
+    { icon: BarChart, label: "Análise ROI", color: "text-accent", action: () => generateDocument("ROI") },
+    { icon: Target, label: "Mapa Processo", color: "text-rpa", action: () => generateDocument("Mapa") },
+    { icon: Sparkles, label: "Sugestões IA", color: "text-primary", action: () => generateDocument("Sugestões") }
   ];
 
   return (
@@ -93,7 +189,8 @@ const ChatIA = () => {
                     <Button
                       key={index}
                       variant="ghost"
-                      className="w-full justify-start gap-2 h-auto p-3"
+                      className="w-full justify-start gap-2 h-auto p-3 hover-scale"
+                      onClick={action.action}
                     >
                       <Icon className={`h-4 w-4 ${action.color}`} />
                       <span className="text-sm">{action.label}</span>
@@ -162,6 +259,55 @@ const ChatIA = () => {
                           </div>
                           <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
                           
+                          {/* Anexos */}
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="space-y-2">
+                              {msg.attachments.map((attachment: any, idx: number) => (
+                                <div key={idx} className="flex items-center gap-2 p-2 bg-muted/50 rounded text-xs">
+                                  <Paperclip className="h-3 w-3" />
+                                  <span>{attachment.name}</span>
+                                  <Badge variant="secondary">{(attachment.size / 1024).toFixed(1)}KB</Badge>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Insights IA */}
+                          {msg.insights && (
+                            <div className="p-3 bg-gradient-primary/10 border border-primary/20 rounded-lg space-y-2">
+                              <div className="flex items-center gap-2 text-sm font-medium">
+                                <Sparkles className="h-4 w-4 text-primary" />
+                                Insights IA
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="text-muted-foreground">Potencial:</span>
+                                  <div className="flex items-center gap-1 mt-1">
+                                    <div className="w-full bg-muted rounded-full h-2">
+                                      <div 
+                                        className="bg-primary h-2 rounded-full" 
+                                        style={{ width: `${msg.insights.automationPotential}%` }}
+                                      />
+                                    </div>
+                                    <span className="text-primary font-medium">{msg.insights.automationPotential}%</span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">ROI Estimado:</span>
+                                  <div className="font-medium text-accent">{msg.insights.estimatedROI}</div>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Complexidade:</span>
+                                  <Badge variant="outline" className="ml-1">{msg.insights.complexity}</Badge>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Prazo:</span>
+                                  <div className="font-medium">{msg.insights.timeToImplement}</div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          
                           {msg.suggestions && (
                             <div className="flex flex-wrap gap-2 mt-2">
                               {msg.suggestions.map((suggestion, index) => (
@@ -170,7 +316,7 @@ const ChatIA = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleSuggestionClick(suggestion)}
-                                  className="text-xs"
+                                  className="text-xs hover-scale"
                                 >
                                   {suggestion}
                                 </Button>
@@ -186,10 +332,51 @@ const ChatIA = () => {
 
               {/* Input de Mensagem */}
               <div className="border-t p-4">
+                {/* Arquivos Selecionados */}
+                {uploadedFiles.length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    <div className="text-xs text-muted-foreground">Arquivos selecionados:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {uploadedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-md text-xs">
+                          <Paperclip className="h-3 w-3" />
+                          <span>{file.name}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-auto p-0"
+                            onClick={() => setUploadedFiles(prev => prev.filter((_, i) => i !== index))}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="icon">
-                    <Paperclip className="h-4 w-4" />
+                  {/* Botão Upload */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Upload de arquivos"
+                  >
+                    <Upload className="h-4 w-4" />
                   </Button>
+                  
+                  {/* Botão Gravação */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleRecording}
+                    className={isRecording ? "text-red-500" : ""}
+                    title={isRecording ? "Parar gravação" : "Gravar áudio"}
+                  >
+                    <Mic className="h-4 w-4" />
+                  </Button>
+
                   <Input
                     placeholder="Digite sua mensagem ou descreva o processo que deseja automatizar..."
                     value={message}
@@ -197,10 +384,20 @@ const ChatIA = () => {
                     onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
                     className="flex-1"
                   />
-                  <Button onClick={handleSendMessage} size="icon">
+                  <Button onClick={handleSendMessage} size="icon" className="hover-scale">
                     <Send className="h-4 w-4" />
                   </Button>
                 </div>
+
+                {/* Input oculto para upload */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.mp3,.wav,.mp4"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
               </div>
             </Card>
           </div>
