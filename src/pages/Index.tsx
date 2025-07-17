@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +15,19 @@ import {
   Users,
   Zap,
   Shield,
-  BarChart3
+  BarChart3,
+  LogIn
 } from "lucide-react";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  // Se usuário já está logado, redirecionar para dashboard
+  if (user) {
+    navigate('/dashboard');
+    return null;
+  }
   const features = [
     {
       icon: MessageSquare,
@@ -75,17 +85,20 @@ const Index = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="bg-gradient-primary hover:opacity-90" asChild>
-              <Link to="/projetos">
-                <Target className="h-5 w-5 mr-2" />
-                Explorar Projetos
-              </Link>
+            <Button 
+              size="lg" 
+              className="bg-gradient-primary hover:opacity-90"
+              onClick={() => navigate('/auth')}
+            >
+              <LogIn className="h-5 w-5 mr-2" />
+              Entrar no Sistema
+              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
             
             <Button size="lg" variant="outline" asChild>
-              <Link to="/chat">
-                <MessageSquare className="h-5 w-5 mr-2" />
-                Iniciar Discovery IA
+              <Link to="/projetos">
+                <Target className="h-5 w-5 mr-2" />
+                Ver Demo
               </Link>
             </Button>
           </div>

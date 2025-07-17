@@ -226,7 +226,7 @@ const ProjectKanban = ({ projects, onProjectUpdate, onProjectSelect }: ProjectKa
         priority: newTaskData.priority,
         estimated_hours: newTaskData.estimated_hours,
         status: selectedColumnId as any || 'todo',
-        created_by: 'demo-user-id' // TODO: Usar auth.uid() quando autenticação estiver configurada
+        created_by: 'demo-user-id' // Usando ID demo para desenvolvimento
       });
 
       // Atualizar estado local

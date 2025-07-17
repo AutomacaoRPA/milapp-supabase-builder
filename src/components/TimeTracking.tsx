@@ -34,7 +34,7 @@ const TimeTracking = ({ projectId }: TimeTrackingProps) => {
     try {
       await createTimeEntry({
         ...data,
-        user_id: "temp-user-id", // TODO: Implementar auth
+        user_id: "demo-user-id", // Usando ID demo para desenvolvimento
         hours: parseFloat(data.hours)
       });
       reset();

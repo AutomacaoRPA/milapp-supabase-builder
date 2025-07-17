@@ -37,7 +37,7 @@ const DocumentManagement = ({ projectId }: DocumentManagementProps) => {
       await createFile({
         ...data,
         project_id: projectId,
-        uploaded_by: "temp-user-id", // TODO: Implementar auth
+        uploaded_by: "demo-user-id", // Usando ID demo para desenvolvimento
         file_path: `/projects/${projectId}/${data.name}`, // Path simulado
         file_size: null
       });

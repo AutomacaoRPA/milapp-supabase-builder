@@ -149,7 +149,7 @@ const ProjectStatusColumns = ({ projects, onProjectUpdate, onProjectSelect }: Pr
 
     const newStatus = destination.droppableId;
     
-    console.log("🐛 Drag Debug:", {
+    // Debug info for drag operation
       projectId: project.id,
       oldStatus: project.status,
       newStatus: newStatus,

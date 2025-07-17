@@ -48,7 +48,7 @@ const TaskManagement = ({ projectId }: TaskManagementProps) => {
       await createTask({
         ...data,
         project_id: projectId,
-        created_by: "temp-user-id", // TODO: Implementar auth
+        created_by: "demo-user-id", // Usando ID demo para desenvolvimento
         priority: parseInt(data.priority),
         estimated_hours: parseFloat(data.estimated_hours) || 0,
         actual_hours: 0
