@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle, Filter, Search, ArrowRight, Users, GitBranch, Activity, CheckCircle2 } from "lucide-react";
+import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle, Filter, Search, ArrowRight, Users, GitBranch, Activity, CheckCircle2, BookOpen } from "lucide-react";
 import { useProjects, Project } from "@/hooks/useProjects";
 import ProjectKanban from "@/components/ProjectKanban";
 import ProjectGridView from "@/components/ProjectGridView";
@@ -13,13 +13,14 @@ import WorkItemBoard from "@/components/WorkItemBoard";
 import SprintBoard from "@/components/SprintBoard";
 import PipelineManagement from "@/components/PipelineManagement";
 import DevOpsOverview from "@/components/DevOpsOverview";
+import InnovationPipelineGuide from "@/components/InnovationPipelineGuide";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import ScrumBoard from "@/components/ScrumBoard";
 import ProjectStatusColumns from "@/components/ProjectStatusColumns";
 
 const Projetos = () => {
-  const [viewMode, setViewMode] = useState<"kanban" | "grid" | "columns" | "workitems" | "sprints" | "scrum" | "pipelines" | "devops">("columns");
+  const [viewMode, setViewMode] = useState<"columns" | "kanban" | "grid" | "workitems" | "sprints" | "scrum" | "pipelines" | "devops" | "guide">("columns");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilters, setSelectedFilters] = useState({
     status: [],
@@ -102,6 +103,8 @@ const Projetos = () => {
     const sampleProject = filteredProjects[0];
 
     switch (viewMode) {
+      case "guide":
+        return <InnovationPipelineGuide />;
       case "workitems":
         return sampleProject ? <WorkItemBoard project={sampleProject} /> : <div>Selecione um projeto</div>;
       case "sprints":
@@ -151,7 +154,7 @@ const Projetos = () => {
                 MilApp - DevOps & Project Management
               </h1>
               <p className="text-muted-foreground">
-                Gestão completa de projetos com metodologia DevOps, Scrum e Azure DevOps
+                Gestão completa de projetos com metodologia DevOps, Scrum e Esteira de Inovação
               </p>
             </div>
             <div className="flex gap-2">
@@ -165,6 +168,14 @@ const Projetos = () => {
               </Button>
               
               <div className="flex gap-1 bg-muted rounded-lg p-1">
+                <Button
+                  variant={viewMode === "guide" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("guide")}
+                  title="Guia da Esteira"
+                >
+                  <BookOpen className="h-4 w-4" />
+                </Button>
                 <Button
                   variant={viewMode === "columns" ? "default" : "ghost"}
                   size="sm"

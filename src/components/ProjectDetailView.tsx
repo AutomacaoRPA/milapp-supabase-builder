@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,12 +12,19 @@ import {
   CheckSquare,
   Calendar,
   User,
-  Target
+  Target,
+  History,
+  BookOpen,
+  GitBranch,
+  Activity,
+  Lightbulb
 } from "lucide-react";
 import { Project } from "@/hooks/useProjects";
 import TaskManagement from "./TaskManagement";
 import TimeTracking from "./TimeTracking";
 import DocumentManagement from "./DocumentManagement";
+import ProjectStageManager from "./ProjectStageManager";
+import InnovationPipelineGuide from "./InnovationPipelineGuide";
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -26,7 +32,21 @@ interface ProjectDetailViewProps {
 }
 
 const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
-  const [activeTab, setActiveTab] = useState("tasks");
+  const [activeTab, setActiveTab] = useState("pipeline");
+
+  // Dados mockados para as etapas do projeto
+  const projectStages = [
+    { id: "1", name: "Priorização", status: "completed" as const, completedAt: "2025-07-14T15:34:45.926Z", assignee: "Marcus Leitao", order: 1 },
+    { id: "2", name: "Hipótese Formulada", status: "completed" as const, completedAt: "2025-07-14T15:38:49.700863+00:00", assignee: "Marcus Leitao", order: 2 },
+    { id: "3", name: "Análise de Viabilidade", status: "completed" as const, completedAt: "2025-07-14T15:47:11.510Z", assignee: "Marcus Leitao", order: 3 },
+    { id: "4", name: "Protótipo Rápido", status: "completed" as const, duration: "5 dias", assignee: "Daniele", order: 4 },
+    { id: "5", name: "Validação do Protótipo", status: "pending" as const, order: 5 },
+    { id: "6", name: "MVP", status: "pending" as const, order: 6 },
+    { id: "7", name: "Teste Operacional", status: "pending" as const, order: 7 },
+    { id: "8", name: "Escala e Entrega", status: "pending" as const, order: 8 },
+    { id: "9", name: "Acompanhamento Pós-Entrega", status: "pending" as const, order: 9 },
+    { id: "10", name: "Sustentação e Evolução", status: "in_progress" as const, order: 10 }
+  ];
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -76,6 +96,11 @@ const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  const handleStageUpdate = (stageId: string, updates: any) => {
+    console.log("Atualizando etapa:", stageId, updates);
+    // Aqui você implementaria a lógica para atualizar a etapa no backend
+  };
+
   return (
     <div className="space-y-6">
       {/* Header do Projeto */}
@@ -88,6 +113,9 @@ const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
             <h1 className="text-2xl font-bold">{project.name}</h1>
             <Badge className={getStatusColor(project.status)}>
               {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+            </Badge>
+            <Badge variant="outline" className="font-mono text-xs">
+              ID #{project.id.slice(-3)}
             </Badge>
           </div>
           {project.description && (
@@ -182,7 +210,15 @@ const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
 
       {/* Tabs de Gestão */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="pipeline" className="flex items-center gap-2">
+            <GitBranch className="h-4 w-4" />
+            Pipeline
+          </TabsTrigger>
+          <TabsTrigger value="guide" className="flex items-center gap-2">
+            <BookOpen className="h-4 w-4" />
+            Guia
+          </TabsTrigger>
           <TabsTrigger value="tasks" className="flex items-center gap-2">
             <CheckSquare className="h-4 w-4" />
             Tarefas
@@ -196,6 +232,19 @@ const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
             Documentos
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="pipeline">
+          <ProjectStageManager
+            projectId={project.id}
+            currentStage="sustentacao"
+            stages={projectStages}
+            onStageUpdate={handleStageUpdate}
+          />
+        </TabsContent>
+
+        <TabsContent value="guide">
+          <InnovationPipelineGuide />
+        </TabsContent>
 
         <TabsContent value="tasks">
           <TaskManagement projectId={project.id} />
