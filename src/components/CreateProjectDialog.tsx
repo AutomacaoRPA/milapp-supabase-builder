@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Project } from "@/hooks/useProjects";
+import { ProjectFormData } from "@/types/forms";
 
 interface CreateProjectDialogProps {
   open: boolean;
@@ -117,7 +118,7 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 <Label htmlFor="status">Status Inicial</Label>
                 <Select 
                   value={formData.status} 
-                  onValueChange={(value: any) => setFormData({ ...formData, status: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />

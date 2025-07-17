@@ -12,6 +12,7 @@ import { Plus, FileText, Download, Upload, Code, TestTube, GitBranch } from "luc
 import { useProjectFiles, ProjectFile } from "@/hooks/useProjectFiles";
 import { useForm } from "react-hook-form";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DocumentFormData } from "@/types/forms";
 
 interface DocumentManagementProps {
   projectId: string;

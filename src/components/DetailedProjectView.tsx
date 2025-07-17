@@ -29,12 +29,12 @@ const DetailedProjectView = ({ project, onBack }: DetailedProjectViewProps) => {
     { id: "10", name: "Sustentação e Evolução", status: "pending" as const, order: 10 },
   ];
 
-  const handleCompletePrioritization = (data: any) => {
+  const handleCompletePrioritization = (data: PrioritizationFormData) => {
     console.log("Completing prioritization with data:", data);
     // Here you would implement the logic to complete the prioritization stage
   };
 
-  const handleSaveDraft = (data: any) => {
+  const handleSaveDraft = (data: PrioritizationFormData) => {
     console.log("Saving draft:", data);
     // Here you would implement the logic to save the draft
   };
