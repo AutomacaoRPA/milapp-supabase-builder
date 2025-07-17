@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle, Filter, Search, ArrowRight, Users, GitBranch, Activity } from "lucide-react";
-import { useProjects } from "@/hooks/useProjects";
+import { useProjects, Project } from "@/hooks/useProjects";
 import ProjectKanban from "@/components/ProjectKanban";
 import ProjectGridView from "@/components/ProjectGridView";
 import ProjectFilters from "@/components/ProjectFilters";
@@ -16,9 +15,10 @@ import PipelineManagement from "@/components/PipelineManagement";
 import DevOpsOverview from "@/components/DevOpsOverview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import ScrumBoard from "@/components/ScrumBoard";
 
 const Projetos = () => {
-  const [viewMode, setViewMode] = useState<"kanban" | "grid" | "workitems" | "sprints" | "pipelines" | "devops">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "grid" | "workitems" | "sprints" | "scrum" | "pipelines" | "devops">("kanban");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilters, setSelectedFilters] = useState({
     status: [],
@@ -105,6 +105,8 @@ const Projetos = () => {
         return sampleProject ? <WorkItemBoard project={sampleProject} /> : <div>Selecione um projeto</div>;
       case "sprints":
         return sampleProject ? <SprintBoard project={sampleProject} /> : <div>Selecione um projeto</div>;
+      case "scrum":
+        return sampleProject ? <ScrumBoard project={sampleProject} /> : <div>Selecione um projeto</div>;
       case "pipelines":
         return sampleProject ? <PipelineManagement project={sampleProject} /> : <div>Selecione um projeto</div>;
       case "devops":
@@ -140,7 +142,7 @@ const Projetos = () => {
                 DevOps & Project Management
               </h1>
               <p className="text-muted-foreground">
-                Gestão completa de projetos com metodologia DevOps e Azure DevOps
+                Gestão completa de projetos com metodologia DevOps, Scrum e Azure DevOps
               </p>
             </div>
             <div className="flex gap-2">
@@ -185,6 +187,14 @@ const Projetos = () => {
                   title="Sprints"
                 >
                   <Users className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "scrum" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("scrum")}
+                  title="Scrum Board"
+                >
+                  <TrendingUp className="h-4 w-4" />
                 </Button>
                 <Button
                   variant={viewMode === "pipelines" ? "default" : "ghost"}
