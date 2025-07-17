@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle, Filter, Search, ArrowRight, Users, GitBranch, Activity } from "lucide-react";
+import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle, Filter, Search, ArrowRight, Users, GitBranch, Activity, CheckCircle2 } from "lucide-react";
 import { useProjects, Project } from "@/hooks/useProjects";
 import ProjectKanban from "@/components/ProjectKanban";
 import ProjectGridView from "@/components/ProjectGridView";
@@ -16,9 +16,10 @@ import DevOpsOverview from "@/components/DevOpsOverview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import ScrumBoard from "@/components/ScrumBoard";
+import ProjectStatusColumns from "@/components/ProjectStatusColumns";
 
 const Projetos = () => {
-  const [viewMode, setViewMode] = useState<"kanban" | "grid" | "workitems" | "sprints" | "scrum" | "pipelines" | "devops">("kanban");
+  const [viewMode, setViewMode] = useState<"kanban" | "grid" | "columns" | "workitems" | "sprints" | "scrum" | "pipelines" | "devops">("columns");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilters, setSelectedFilters] = useState({
     status: [],
@@ -119,6 +120,14 @@ const Projetos = () => {
             onProjectSelect={setSelectedProject}
           />
         );
+      case "columns":
+        return (
+          <ProjectStatusColumns 
+            projects={filteredProjects}
+            onProjectUpdate={updateProject}
+            onProjectSelect={setSelectedProject}
+          />
+        );
       case "kanban":
       default:
         return (
@@ -133,13 +142,13 @@ const Projetos = () => {
 
   return (
     <div className="min-h-screen bg-background p-6 animate-fade-in">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-full mx-auto space-y-6">
         {/* Header com Governança */}
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-start">
             <div className="space-y-2">
               <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                DevOps & Project Management
+                MilApp - DevOps & Project Management
               </h1>
               <p className="text-muted-foreground">
                 Gestão completa de projetos com metodologia DevOps, Scrum e Azure DevOps
@@ -156,6 +165,14 @@ const Projetos = () => {
               </Button>
               
               <div className="flex gap-1 bg-muted rounded-lg p-1">
+                <Button
+                  variant={viewMode === "columns" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("columns")}
+                  title="Colunas por Status"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
                 <Button
                   variant={viewMode === "kanban" ? "default" : "ghost"}
                   size="sm"
@@ -219,7 +236,7 @@ const Projetos = () => {
                 onClick={() => setShowCreateDialog(true)}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Novo Projeto
+                Nova Ideia
               </Button>
             </div>
           </div>
@@ -251,7 +268,7 @@ const Projetos = () => {
         </div>
 
         {/* Indicadores de Governança - só mostrar nas views de overview */}
-        {(viewMode === "kanban" || viewMode === "grid") && (
+        {(viewMode === "kanban" || viewMode === "grid" || viewMode === "columns") && (
           <div className="grid gap-4 md:grid-cols-4">
             <Card className="border-l-4 border-l-primary">
               <CardContent className="p-4">
@@ -260,8 +277,8 @@ const Projetos = () => {
                     <Target className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Total Projetos</p>
-                    <p className="text-2xl font-bold">{statusCounts.total}</p>
+                    <p className="text-sm text-muted-foreground">Captação de Ideias</p>
+                    <p className="text-2xl font-bold">{statusCounts.ideacao}</p>
                   </div>
                 </div>
               </CardContent>
@@ -274,10 +291,8 @@ const Projetos = () => {
                     <Clock className="h-5 w-5 text-rpa" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Em Andamento</p>
-                    <p className="text-2xl font-bold">
-                      {statusCounts.desenvolvimento + statusCounts.homologacao}
-                    </p>
+                    <p className="text-sm text-muted-foreground">Priorização</p>
+                    <p className="text-2xl font-bold">{statusCounts.planejamento}</p>
                   </div>
                 </div>
               </CardContent>
@@ -290,15 +305,8 @@ const Projetos = () => {
                     <TrendingUp className="h-5 w-5 text-accent" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">ROI Estimado</p>
-                    <p className="text-xl font-bold">
-                      {new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL',
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      }).format(totalEstimatedROI)}
-                    </p>
+                    <p className="text-sm text-muted-foreground">Em Desenvolvimento</p>
+                    <p className="text-2xl font-bold">{statusCounts.desenvolvimento}</p>
                   </div>
                 </div>
               </CardContent>
@@ -308,11 +316,11 @@ const Projetos = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                    <CheckCircle2 className="h-5 w-5 text-destructive" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Em Atraso</p>
-                    <p className="text-2xl font-bold">{overdueProjects}</p>
+                    <p className="text-sm text-muted-foreground">Finalizadas</p>
+                    <p className="text-2xl font-bold">{statusCounts.producao + statusCounts.concluido}</p>
                   </div>
                 </div>
               </CardContent>
