@@ -20,6 +20,10 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    category: "",
+    expected_impact: "",
+    responsible_name: "",
+    responsible_email: "",
     status: "ideacao" as const,
     priority: 3,
     methodology: "kanban",
@@ -52,6 +56,10 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
       setFormData({
         name: "",
         description: "",
+        category: "",
+        expected_impact: "",
+        responsible_name: "",
+        responsible_email: "",
         status: "ideacao",
         priority: 3,
         methodology: "kanban",
@@ -100,14 +108,47 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
               />
             </div>
 
+            {/* Categoria */}
+            <div className="space-y-2">
+              <Label htmlFor="category">Categoria</Label>
+              <Select 
+                value={formData.category} 
+                onValueChange={(value) => setFormData({ ...formData, category: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a categoria da sua ideia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="automacao">Automação de Processos</SelectItem>
+                  <SelectItem value="integracao">Integração de Sistemas</SelectItem>
+                  <SelectItem value="modernizacao">Modernização Tecnológica</SelectItem>
+                  <SelectItem value="otimizacao">Otimização de Recursos</SelectItem>
+                  <SelectItem value="compliance">Compliance e Segurança</SelectItem>
+                  <SelectItem value="inovacao">Inovação e Novos Produtos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Descrição */}
             <div className="space-y-2">
-              <Label htmlFor="description">Descrição</Label>
+              <Label htmlFor="description">Descrição da Ideia</Label>
               <Textarea
                 id="description"
-                placeholder="Descreva o objetivo e escopo do projeto..."
+                placeholder="Descreva sua ideia em detalhes. Inclua o problema que resolve, como funciona e quais benefícios trará para os pacientes 50+ da MedSenior."
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={4}
+              />
+            </div>
+
+            {/* Impacto Esperado */}
+            <div className="space-y-2">
+              <Label htmlFor="expected_impact">Impacto Esperado</Label>
+              <Textarea
+                id="expected_impact"
+                placeholder="Descreva qual impacto você espera que sua ideia tenha nos pacientes, na operação ou nos resultados da MedSenior."
+                value={formData.expected_impact}
+                onChange={(e) => setFormData({ ...formData, expected_impact: e.target.value })}
                 rows={3}
               />
             </div>
@@ -210,6 +251,30 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 />
               </div>
             </div>
+
+            {/* Linha 4: Informações do Responsável */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="responsible_name">Seu Nome</Label>
+                <Input
+                  id="responsible_name"
+                  placeholder="Digite seu nome completo"
+                  value={formData.responsible_name}
+                  onChange={(e) => setFormData({ ...formData, responsible_name: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="responsible_email">Seu Email</Label>
+                <Input
+                  id="responsible_email"
+                  type="email"
+                  placeholder="Digite seu email para receber retorno sobre a ideia"
+                  value={formData.responsible_email}
+                  onChange={(e) => setFormData({ ...formData, responsible_email: e.target.value })}
+                />
+              </div>
+            </div>
           </div>
 
           <DialogFooter>
@@ -217,7 +282,7 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting || !formData.name.trim()}>
-              {isSubmitting ? "Criando..." : "Criar Projeto"}
+              {isSubmitting ? "Revisar e Enviar Ideia" : "Criar Projeto"}
             </Button>
           </DialogFooter>
         </form>
