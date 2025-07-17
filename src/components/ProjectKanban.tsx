@@ -42,87 +42,47 @@ interface ProjectKanbanProps {
   onProjectSelect?: (project: Project) => void;
 }
 
-// Colunas baseadas no timeline do projeto
+// Colunas baseadas no kanban mostrado na imagem
 const taskStatusColumns = [
   { 
-    id: "priorizacao", 
-    label: "Priorização", 
-    color: "bg-slate-50 border-l-4 border-l-slate-400",
-    bgColor: "bg-slate-50",
+    id: "captacao_ideias", 
+    label: "Captação de Ideias", 
+    color: "bg-purple-50 border-l-4 border-l-purple-400",
+    bgColor: "bg-purple-50",
     count: 0,
     icon: Target
   },
   { 
-    id: "hipotese_formulada", 
-    label: "Hipótese Formulada", 
+    id: "priorizacao", 
+    label: "Priorização", 
     color: "bg-blue-50 border-l-4 border-l-blue-500",
     bgColor: "bg-blue-50", 
     count: 0,
     icon: FileText
   },
   { 
-    id: "analise_viabilidade", 
-    label: "Análise de Viabilidade", 
+    id: "em_desenvolvimento", 
+    label: "Em Desenvolvimento", 
     color: "bg-yellow-50 border-l-4 border-l-yellow-500",
     bgColor: "bg-yellow-50",
-    count: 0,
-    icon: TrendingUp
-  },
-  { 
-    id: "prototipo_rapido", 
-    label: "Protótipo Rápido", 
-    color: "bg-purple-50 border-l-4 border-l-purple-500", 
-    bgColor: "bg-purple-50",
     count: 0,
     icon: Code
   },
   { 
-    id: "validacao_prototipo", 
-    label: "Validação do Protótipo", 
-    color: "bg-orange-50 border-l-4 border-l-orange-500",
+    id: "homologacao", 
+    label: "Homologação", 
+    color: "bg-orange-50 border-l-4 border-l-orange-500", 
     bgColor: "bg-orange-50",
     count: 0,
     icon: CheckCircle
   },
   { 
-    id: "mvp", 
-    label: "MVP", 
-    color: "bg-indigo-50 border-l-4 border-l-indigo-500",
-    bgColor: "bg-indigo-50",
-    count: 0,
-    icon: Star
-  },
-  { 
-    id: "teste_operacional", 
-    label: "Teste Operacional", 
-    color: "bg-pink-50 border-l-4 border-l-pink-500",
-    bgColor: "bg-pink-50",
-    count: 0,
-    icon: Bug
-  },
-  { 
-    id: "escala_entrega", 
-    label: "Escala e Entrega", 
-    color: "bg-emerald-50 border-l-4 border-l-emerald-500",
-    bgColor: "bg-emerald-50",
-    count: 0,
-    icon: Users
-  },
-  { 
-    id: "acompanhamento_pos_entrega", 
-    label: "Acompanhamento Pós-Entrega", 
-    color: "bg-cyan-50 border-l-4 border-l-cyan-500",
-    bgColor: "bg-cyan-50",
-    count: 0,
-    icon: Eye
-  },
-  { 
-    id: "sustentacao_evolucao", 
-    label: "Sustentação e Evolução", 
+    id: "finalizadas", 
+    label: "Finalizadas", 
     color: "bg-green-50 border-l-4 border-l-green-500",
     bgColor: "bg-green-50",
     count: 0,
-    icon: Zap
+    icon: Star
   }
 ];
 
