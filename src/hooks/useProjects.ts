@@ -6,7 +6,7 @@ export interface Project {
   id: string;
   name: string;
   description: string | null;
-  status: "ideacao" | "planejamento" | "desenvolvimento" | "homologacao" | "producao" | "suspenso" | "concluido";
+  status: "ideacao" | "qualidade_processos" | "planejamento" | "hipotese_formulada" | "analise_viabilidade" | "prototipo_rapido" | "validacao_prototipo" | "mvp" | "teste_operacional" | "escala_entrega" | "acompanhamento_pos_entrega" | "sustentacao_evolucao" | "concluido";
   priority: number | null;
   methodology: string | null;
   complexity_score: number | null;
