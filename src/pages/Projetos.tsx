@@ -3,12 +3,13 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle, Filter, Search, Settings } from "lucide-react";
+import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle, Filter, Search, ArrowRight } from "lucide-react";
 import { useProjects } from "@/hooks/useProjects";
 import ProjectKanban from "@/components/ProjectKanban";
 import ProjectGridView from "@/components/ProjectGridView";
 import ProjectFilters from "@/components/ProjectFilters";
 import CreateProjectDialog from "@/components/CreateProjectDialog";
+import ProjectDetailView from "@/components/ProjectDetailView";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 
@@ -22,8 +23,23 @@ const Projetos = () => {
   });
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
   
   const { projects, loading, createProject, updateProject } = useProjects();
+
+  // Se um projeto está selecionado, mostrar a visão detalhada
+  if (selectedProject) {
+    return (
+      <div className="min-h-screen bg-background p-6 animate-fade-in">
+        <div className="max-w-7xl mx-auto">
+          <ProjectDetailView 
+            project={selectedProject}
+            onBack={() => setSelectedProject(null)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   // Filtrar projetos baseado na busca e filtros
   const filteredProjects = projects.filter(project => {
@@ -222,11 +238,13 @@ const Projetos = () => {
           <ProjectKanban 
             projects={filteredProjects} 
             onProjectUpdate={updateProject}
+            onProjectSelect={setSelectedProject}
           />
         ) : (
           <ProjectGridView 
             projects={filteredProjects}
             onProjectUpdate={updateProject}
+            onProjectSelect={setSelectedProject}
           />
         )}
 

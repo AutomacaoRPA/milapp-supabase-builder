@@ -14,13 +14,15 @@ import {
   AlertTriangle,
   Clock,
   CheckCircle,
-  XCircle
+  XCircle,
+  ArrowRight
 } from "lucide-react";
 import { Project } from "@/hooks/useProjects";
 
 interface ProjectKanbanProps {
   projects: Project[];
   onProjectUpdate?: (projectId: string, updates: Partial<Project>) => void;
+  onProjectSelect?: (project: Project) => void;
 }
 
 const statusColumns = [
@@ -68,7 +70,7 @@ const statusColumns = [
   }
 ];
 
-const ProjectKanban = ({ projects, onProjectUpdate }: ProjectKanbanProps) => {
+const ProjectKanban = ({ projects, onProjectUpdate, onProjectSelect }: ProjectKanbanProps) => {
   const projectsByStatus = useMemo(() => {
     return statusColumns.reduce((acc, column) => {
       acc[column.id] = projects.filter(project => project.status === column.id);
@@ -161,11 +163,12 @@ const ProjectKanban = ({ projects, onProjectUpdate }: ProjectKanbanProps) => {
               return (
                 <Card 
                   key={project.id} 
-                  className={`transition-all hover:shadow-lg animate-slide-up cursor-pointer ${
+                  className={`transition-all hover:shadow-lg animate-slide-up cursor-pointer group ${
                     isOverdue(project) ? "border-destructive/50 bg-destructive/5" :
                     isUrgent ? "border-rpa/50 bg-rpa/5" : ""
                   }`}
                   style={{ animationDelay: `${index * 100}ms` }}
+                  onClick={() => onProjectSelect?.(project)}
                 >
                   <CardHeader className="pb-3">
                     <div className="flex justify-between items-start">
@@ -192,9 +195,23 @@ const ProjectKanban = ({ projects, onProjectUpdate }: ProjectKanbanProps) => {
                           )}
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      
+                      <div className="flex gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onProjectSelect?.(project);
+                          }}
+                        >
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     {project.description && (
                       <CardDescription className="line-clamp-2 text-sm">

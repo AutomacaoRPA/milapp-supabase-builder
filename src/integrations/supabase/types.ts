@@ -631,6 +631,139 @@ export type Database = {
           },
         ]
       }
+      project_files: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          name: string
+          project_id: string | null
+          updated_at: string | null
+          uploaded_by: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          name: string
+          project_id?: string | null
+          updated_at?: string | null
+          uploaded_by: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          name?: string
+          project_id?: string | null
+          updated_at?: string | null
+          uploaded_by?: string
+          version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_files_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          actual_hours: number | null
+          assigned_to: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          due_date: string | null
+          estimated_hours: number | null
+          id: string
+          priority: number | null
+          project_id: string | null
+          status: string
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          priority?: number | null
+          project_id?: string | null
+          status?: string
+          title: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_hours?: number | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          estimated_hours?: number | null
+          id?: string
+          priority?: number | null
+          project_id?: string | null
+          status?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           actual_roi: number | null
@@ -905,6 +1038,51 @@ export type Database = {
             columns: ["user_story_id"]
             isOneToOne: false
             referencedRelation: "user_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      time_entries: {
+        Row: {
+          created_at: string | null
+          date: string
+          description: string | null
+          hours: number
+          id: string
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          hours: number
+          id?: string
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          hours?: number
+          id?: string
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_entries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "project_tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
