@@ -78,19 +78,27 @@ export const useProjects = () => {
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("projects")
         .update(updates)
-        .eq("id", id);
+        .eq("id", id)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Atualizar o estado local imediatamente
+      setProjects(prevProjects => 
+        prevProjects.map(project => 
+          project.id === id ? { ...project, ...updates } : project
+        )
+      );
 
       toast({
         title: "Sucesso",
         description: "Projeto atualizado com sucesso!",
       });
 
-      await fetchProjects();
     } catch (error) {
       console.error("Erro ao atualizar projeto:", error);
       toast({
