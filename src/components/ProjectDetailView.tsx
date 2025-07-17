@@ -14,13 +14,15 @@ import {
   Settings,
   GitBranch,
   BookOpen,
-  Zap
+  Zap,
+  ExternalLink
 } from "lucide-react";
 import { Project } from "@/hooks/useProjects";
 import ProjectStageManager from "./ProjectStageManager";
 import InnovationPipelineGuide from "./InnovationPipelineGuide";
 import PDDGovernancePanel from "./PDDGovernancePanel";
 import ScrumManagement from "./ScrumManagement";
+import DetailedProjectView from "./DetailedProjectView";
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -29,6 +31,7 @@ interface ProjectDetailViewProps {
 
 const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [showDetailedView, setShowDetailedView] = useState(false);
 
   // Mock stages data for ProjectStageManager
   const mockStages = [
@@ -48,6 +51,16 @@ const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
     console.log("Updating stage:", stageId, updates);
     // Here you would implement the actual stage update logic
   };
+
+  // If detailed view is requested, show it
+  if (showDetailedView) {
+    return (
+      <DetailedProjectView 
+        project={project} 
+        onBack={() => setShowDetailedView(false)}
+      />
+    );
+  }
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -102,9 +115,18 @@ const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
           <h1 className="text-2xl font-bold">{project.name}</h1>
           <p className="text-muted-foreground">{project.description}</p>
         </div>
-        <Badge className={getStatusColor(project.status)}>
-          {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
-        </Badge>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => setShowDetailedView(true)}
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Vista Detalhada PDD
+          </Button>
+          <Badge className={getStatusColor(project.status)}>
+            {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+          </Badge>
+        </div>
       </div>
 
       {/* Summary Cards */}
