@@ -8,7 +8,7 @@ import ProjectKanban from "@/components/ProjectKanban";
 import ProjectGridView from "@/components/ProjectGridView";
 import ProjectFilters from "@/components/ProjectFilters";
 import CreateProjectDialog from "@/components/CreateProjectDialog";
-import ProjectDetailView from "@/components/ProjectDetailView";
+import PDDProjectView from "@/components/PDDProjectView";
 import WorkItemBoard from "@/components/WorkItemBoard";
 import SprintBoard from "@/components/SprintBoard";
 import PipelineManagement from "@/components/PipelineManagement";
@@ -29,21 +29,17 @@ const Projetos = () => {
   });
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   
   const { projects, loading, createProject, updateProject } = useProjects();
 
-  // Se um projeto está selecionado, mostrar a visão detalhada
+  // Se um projeto está selecionado, mostrar a visão PDD detalhada
   if (selectedProject) {
     return (
-      <div className="min-h-screen bg-background p-6 animate-fade-in">
-        <div className="max-w-7xl mx-auto">
-          <ProjectDetailView 
-            project={selectedProject}
-            onBack={() => setSelectedProject(null)}
-          />
-        </div>
-      </div>
+      <PDDProjectView 
+        project={selectedProject}
+        onBack={() => setSelectedProject(null)}
+      />
     );
   }
 
