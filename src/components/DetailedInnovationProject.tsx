@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { 
   ArrowLeft, 
+  ArrowRight,
   Calendar, 
   User, 
   Building, 
@@ -113,200 +114,68 @@ const DetailedInnovationProject = ({ onBack }: DetailedInnovationProjectProps) =
           </div>
         </div>
 
-        {/* Timeline e Progresso */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Timeline do Projeto
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-semibold">Progresso Geral</h3>
-                  <p className="text-sm text-muted-foreground">{mockProject.currentStage} - Etapa atual em execução</p>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Coluna Esquerda - Timeline */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Timeline do Projeto */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Calendar className="h-5 w-5" />
+                  Timeline do Projeto
+                </CardTitle>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Progresso Geral</p>
+                  <p className="text-2xl font-bold">{mockProject.progress}%</p>
                 </div>
-                <div className="text-right">
-                  <span className="text-2xl font-bold">{mockProject.progress}%</span>
-                </div>
-              </div>
-              <Progress value={mockProject.progress} className="h-2" />
-              
-              {/* Etapas da Esteira */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mt-6">
+              </CardHeader>
+              <CardContent className="space-y-3">
                 {projectStages.map((stage, index) => (
-                  <div key={stage.id} className="relative">
-                    <div className={`p-3 rounded-lg border transition-all ${
-                      getStageStatus(index) === "current" 
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-950" 
-                        : getStageStatus(index) === "completed"
-                        ? "border-green-500 bg-green-50 dark:bg-green-950"
-                        : "border-gray-200 bg-gray-50 dark:bg-gray-900"
-                    }`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        {getStageStatus(index) === "completed" ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
-                        ) : getStageStatus(index) === "current" ? (
-                          <Clock className="h-4 w-4 text-blue-600" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4 text-gray-400" />
-                        )}
-                        <span className={`text-xs font-medium ${
-                          getStageStatus(index) === "pending" ? "text-gray-500" : ""
+                  <div key={stage.id} className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full border-2 ${
+                      getStageStatus(index) === "completed" 
+                        ? "bg-green-500 border-green-500" 
+                        : getStageStatus(index) === "current"
+                        ? "bg-blue-500 border-blue-500"
+                        : "bg-gray-200 border-gray-300"
+                    }`} />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-sm ${
+                          getStageStatus(index) === "current" ? "font-medium text-blue-600" : ""
                         }`}>
-                          {getStageStatus(index) === "completed" ? "Concluído" :
-                           getStageStatus(index) === "current" ? "Em andamento" : "Pendente"}
+                          {stage.name}
                         </span>
+                        <Badge 
+                          variant={getStageStatus(index) === "current" ? "default" : "outline"}
+                          className={`text-xs ${
+                            getStageStatus(index) === "current" 
+                              ? "bg-green-500 text-white" 
+                              : getStageStatus(index) === "completed"
+                              ? "bg-gray-100 text-gray-600"
+                              : "bg-orange-100 text-orange-600"
+                          }`}
+                        >
+                          {getStageStatus(index) === "completed" 
+                            ? "Concluído" 
+                            : getStageStatus(index) === "current"
+                            ? "Em andamento"
+                            : "Pendente"}
+                        </Badge>
                       </div>
-                      <h4 className="font-medium text-sm">{stage.name}</h4>
+                      {getStageStatus(index) === "current" && (
+                        <p className="text-xs text-muted-foreground mt-1">Etapa atual em execução</p>
+                      )}
                     </div>
                   </div>
                 ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Coluna Principal */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Informações do Projeto */}
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="h-5 w-5" />
-                    {mockProject.name}
-                  </CardTitle>
-                  <Badge>{mockProject.currentStage}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Proponente</p>
-                      <p className="font-medium">{mockProject.proponent}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Área Responsável</p>
-                      <p className="font-medium">{mockProject.responsibleArea}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Data de Criação</p>
-                      <p className="font-medium">{mockProject.createdAt}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Impacto Esperado</p>
-                      <p className="font-medium">{mockProject.expectedImpact}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Labels */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium flex items-center gap-2">
-                      <Tag className="h-4 w-4" />
-                      Labels do Projeto
-                    </h4>
-                    <Button variant="outline" size="sm">
-                      Gerenciar Labels
-                    </Button>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {mockProject.labels.map((label, index) => (
-                      <Badge key={index} variant="secondary">{label}</Badge>
-                    ))}
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
-            {/* Descrições */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Descrições do Projeto
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Descrição Original */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-medium">Descrição Original (Proponente)</h4>
-                    <Badge variant="outline">Original</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
-                    {mockProject.originalDescription}
-                  </p>
-                </div>
-
-                {/* Descrição Refinada */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <h4 className="font-medium">Descrição Refinada (Time de Inovação)</h4>
-                      <Badge variant="outline">Refinada</Badge>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setEditingDescription(!editingDescription)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Editar
-                    </Button>
-                  </div>
-                  {editingDescription ? (
-                    <div className="space-y-2">
-                      <Textarea 
-                        defaultValue={mockProject.refinedDescription}
-                        rows={6}
-                      />
-                      <div className="flex gap-2">
-                        <Button size="sm">
-                          <Save className="h-4 w-4 mr-2" />
-                          Salvar
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => setEditingDescription(false)}
-                        >
-                          Cancelar
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground p-3 bg-muted rounded-lg">
-                      {mockProject.refinedDescription}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Coluna Lateral */}
-          <div className="space-y-6">
             {/* Histórico de Análises IA */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Brain className="h-5 w-5" />
                   Histórico de Análises IA
                 </CardTitle>
@@ -316,39 +185,177 @@ const DetailedInnovationProject = ({ onBack }: DetailedInnovationProjectProps) =
                   Visualize o histórico de análises de priorização feitas pela IA
                 </p>
                 <Button variant="outline" className="w-full">
+                  <FileText className="h-4 w-4 mr-2" />
                   Ver Histórico
                 </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Coluna Direita - Conteúdo Principal */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Header do Projeto */}
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-xl">{mockProject.name}</CardTitle>
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">Priorização</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="flex items-center gap-3">
+                    <User className="h-4 w-4 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Proponente</p>
+                      <p className="font-medium">{mockProject.proponent}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Building className="h-4 w-4 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Área Responsável</p>
+                      <p className="font-medium">{mockProject.responsibleArea}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Data de Criação</p>
+                      <p className="font-medium">{mockProject.createdAt}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Target className="h-4 w-4 text-blue-600" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Impacto Esperado</p>
+                      <p className="font-medium">{mockProject.expectedImpact}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Labels do Projeto */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium">Labels do Projeto</h4>
+                  <Button variant="outline" size="sm">
+                    <Tag className="h-4 w-4 mr-2" />
+                    Gerenciar Labels
+                  </Button>
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {mockProject.labels.map((label, index) => (
+                    <Badge key={index} variant="secondary" className="bg-gray-100 text-gray-700">
+                      {label}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Descrição Original */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <h4 className="font-medium">Descrição Original (Proponente)</h4>
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    Original
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {mockProject.originalDescription}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Descrição Refinada */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-medium">Descrição Refinada (Time de Inovação)</h4>
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      Refinada
+                    </Badge>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setEditingDescription(!editingDescription)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                </div>
+                {editingDescription ? (
+                  <div className="space-y-3">
+                    <Textarea 
+                      defaultValue={mockProject.refinedDescription}
+                      rows={6}
+                      className="resize-none"
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm">
+                        <Save className="h-4 w-4 mr-2" />
+                        Salvar
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setEditingDescription(false)}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {mockProject.refinedDescription}
+                  </p>
+                )}
               </CardContent>
             </Card>
 
             {/* Ferramentas de IA */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  Ferramentas de IA
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                  <h4 className="font-medium">Ferramentas de IA</h4>
+                  <Badge className="bg-purple-100 text-purple-700 border-purple-200">
+                    Inteligência Artificial
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
                   Use IA para estruturar descrições e gerar resumos executivos profissionais
                 </p>
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Estruturar Descrição
+                <div className="grid grid-cols-2 gap-3">
+                  <Button variant="outline" className="justify-start h-auto py-3">
+                    <div className="text-left">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4" />
+                        <span className="font-medium">Estruturar Descrição</span>
+                      </div>
+                    </div>
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    Resumos Executivos
+                  <Button variant="outline" className="justify-start h-auto py-3 bg-green-50 border-green-200 hover:bg-green-100">
+                    <div className="text-left">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-green-600" />
+                        <span className="font-medium text-green-700">Resumos Executivos</span>
+                      </div>
+                    </div>
                   </Button>
                 </div>
-                <Separator />
-                <div>
+                <div className="mt-4 pt-4 border-t">
                   <p className="text-xs text-muted-foreground mb-2">
                     Organizar e estruturar a descrição da ideia
                   </p>
                   <Button variant="secondary" className="w-full">
+                    <Sparkles className="h-4 w-4 mr-2" />
                     Gerar e Editar Descrição Estruturada
                   </Button>
                 </div>
@@ -357,172 +364,175 @@ const DetailedInnovationProject = ({ onBack }: DetailedInnovationProjectProps) =
 
             {/* Gerenciamento de Etapas */}
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="h-5 w-5" />
                   Gerenciamento de Etapas
                 </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
                   Complete a etapa atual para avançar na esteira de inovação
                 </p>
-                
-                <div className="bg-muted p-3 rounded-lg">
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Progress na Esteira */}
+                <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-medium">Progresso na Esteira</span>
-                    <Badge>Em Andamento</Badge>
+                    <Badge className="bg-blue-100 text-blue-800">Em Andamento</Badge>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span>{mockProject.progress}%</span>
-                      <span className="text-muted-foreground">Etapa 2 de 11</span>
-                    </div>
-                    <Progress value={mockProject.progress} className="h-2" />
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-lg font-bold">{mockProject.progress}%</span>
+                    <span className="text-sm text-muted-foreground">Etapa 2 de 11</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">{mockProject.currentStage}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm font-medium mb-3">
+                  <Progress value={mockProject.progress} className="h-2 mb-2" />
+                  <p className="text-sm font-medium text-blue-700">{mockProject.currentStage}</p>
+                  <p className="text-xs text-muted-foreground">
                     Complete as informações abaixo para avançar na esteira de inovação
                   </p>
-                  
-                  <div className="space-y-3">
+                </div>
+
+                {/* Formulário */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium">Liderança Responsável *</Label>
+                    <Select onValueChange={(value) => setFormData({...formData, leadership: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione ou gerencie uma liderança" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="marcus">Marcus Leitão</SelectItem>
+                        <SelectItem value="daniele">Daniele Silva</SelectItem>
+                        <SelectItem value="roberto">Roberto Santos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="leadership" className="text-xs">Liderança Responsável *</Label>
-                      <Select onValueChange={(value) => setFormData({...formData, leadership: value})}>
-                        <SelectTrigger className="h-8">
-                          <SelectValue placeholder="Selecione ou gerencie uma liderança" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="marcus">Marcus Leitão</SelectItem>
-                          <SelectItem value="daniele">Daniele Silva</SelectItem>
-                          <SelectItem value="roberto">Roberto Santos</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Label className="text-sm font-medium">Data Prevista de Início *</Label>
+                      <Input 
+                        type="date" 
+                        placeholder="dd/mm/aaaa"
+                        onChange={(e) => setFormData({...formData, startDate: e.target.value})}
+                      />
                     </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label htmlFor="startDate" className="text-xs">Data Prevista de Início *</Label>
-                        <Input 
-                          type="date" 
-                          className="h-8"
-                          onChange={(e) => setFormData({...formData, startDate: e.target.value})}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="endDate" className="text-xs">Data Prevista de Término *</Label>
-                        <Input 
-                          type="date" 
-                          className="h-8"
-                          onChange={(e) => setFormData({...formData, endDate: e.target.value})}
-                        />
-                      </div>
-                    </div>
-
                     <div>
-                      <Label className="text-xs">Alinhamento Estratégico *</Label>
-                      <Select onValueChange={(value) => setFormData({...formData, strategicAlignment: value})}>
-                        <SelectTrigger className="h-8">
-                          <SelectValue placeholder="Selecione o alinhamento" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="excelencia">Excelência Operacional</SelectItem>
-                          <SelectItem value="inovacao">Inovação de Produto</SelectItem>
-                          <SelectItem value="experiencia">Experiência do Cliente</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs">Impacto *</Label>
-                        <Select onValueChange={(value) => setFormData({...formData, impact: value})}>
-                          <SelectTrigger className="h-8">
-                            <SelectValue placeholder="Selecione o impacto" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="alto">Alto</SelectItem>
-                            <SelectItem value="medio">Médio</SelectItem>
-                            <SelectItem value="baixo">Baixo</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Viabilidade *</Label>
-                        <Select onValueChange={(value) => setFormData({...formData, viability: value})}>
-                          <SelectTrigger className="h-8">
-                            <SelectValue placeholder="Selecione a viabilidade" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="alta">Alta</SelectItem>
-                            <SelectItem value="media">Média</SelectItem>
-                            <SelectItem value="baixa">Baixa</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs">Esforço *</Label>
-                        <Select onValueChange={(value) => setFormData({...formData, effort: value})}>
-                          <SelectTrigger className="h-8">
-                            <SelectValue placeholder="Selecione o esforço" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="baixo">Baixo</SelectItem>
-                            <SelectItem value="medio">Médio</SelectItem>
-                            <SelectItem value="alto">Alto</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-xs">Horizonte de Inovação *</Label>
-                        <Select onValueChange={(value) => setFormData({...formData, innovationHorizon: value})}>
-                          <SelectTrigger className="h-8">
-                            <SelectValue placeholder="Selecione o horizonte" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="h1">H1 - Core</SelectItem>
-                            <SelectItem value="h2">H2 - Adjacent</SelectItem>
-                            <SelectItem value="h3">H3 - Transformational</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <Label className="text-sm font-medium">Data Prevista de Término *</Label>
+                      <Input 
+                        type="date" 
+                        placeholder="dd/mm/aaaa"
+                        onChange={(e) => setFormData({...formData, endDate: e.target.value})}
+                      />
                     </div>
                   </div>
 
-                  {/* Análise IA */}
-                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                    <h5 className="text-sm font-medium mb-2 flex items-center gap-2">
-                      <Brain className="h-4 w-4" />
-                      Análise IA para Priorização
-                    </h5>
+                  <div>
+                    <Label className="text-sm font-medium">Alinhamento Estratégico *</Label>
+                    <Select onValueChange={(value) => setFormData({...formData, strategicAlignment: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o alinhamento" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="excelencia">Excelência Operacional</SelectItem>
+                        <SelectItem value="inovacao">Inovação de Produto</SelectItem>
+                        <SelectItem value="experiencia">Experiência do Cliente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Impacto *</Label>
+                    <Select onValueChange={(value) => setFormData({...formData, impact: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o impacto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="alto">Alto</SelectItem>
+                        <SelectItem value="medio">Médio</SelectItem>
+                        <SelectItem value="baixo">Baixo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Viabilidade *</Label>
+                    <Select onValueChange={(value) => setFormData({...formData, viability: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a viabilidade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="alta">Alta</SelectItem>
+                        <SelectItem value="media">Média</SelectItem>
+                        <SelectItem value="baixa">Baixa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Esforço *</Label>
+                    <Select onValueChange={(value) => setFormData({...formData, effort: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o esforço" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="baixo">Baixo</SelectItem>
+                        <SelectItem value="medio">Médio</SelectItem>
+                        <SelectItem value="alto">Alto</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Horizonte de Inovação *</Label>
+                    <Select onValueChange={(value) => setFormData({...formData, innovationHorizon: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o horizonte" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="h1">H1 - Core</SelectItem>
+                        <SelectItem value="h2">H2 - Adjacent</SelectItem>
+                        <SelectItem value="h3">H3 - Transformational</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Análise IA para Priorização */}
+                  <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg border border-green-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Brain className="h-5 w-5 text-green-600" />
+                      <h5 className="font-medium text-green-800">Análise IA para Priorização</h5>
+                    </div>
                     {isFormComplete ? (
-                      <Button size="sm" className="w-full">
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Executar Análise IA
-                      </Button>
+                      <div className="text-center py-4">
+                        <div className="animate-spin h-8 w-8 border-2 border-green-600 border-t-transparent rounded-full mx-auto mb-3"></div>
+                        <p className="text-sm text-green-700">Executando análise...</p>
+                      </div>
                     ) : (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         Preencha todos os campos obrigatórios para habilitar a análise por IA
                       </p>
+                    )}
+                    {!isFormComplete && (
+                      <div className="text-center py-8">
+                        <div className="h-12 w-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Brain className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">Complete o formulário para usar a IA</p>
+                      </div>
                     )}
                   </div>
 
                   {/* Botões de Ação */}
-                  <div className="space-y-2 mt-4">
-                    <Button variant="outline" size="sm" className="w-full">
+                  <div className="flex gap-3 pt-4">
+                    <Button variant="outline" className="flex-1">
+                      <Save className="h-4 w-4 mr-2" />
                       Salvar Rascunho
                     </Button>
                     <Button 
-                      size="sm" 
-                      className="w-full"
+                      className="flex-1 bg-green-600 hover:bg-green-700"
                       disabled={!isFormComplete}
                     >
+                      <ArrowRight className="h-4 w-4 mr-2" />
                       Completar Priorização e Avançar para Hipótese Formulada
                     </Button>
                   </div>
