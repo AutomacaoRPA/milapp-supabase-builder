@@ -53,6 +53,14 @@ const taskStatusColumns = [
     icon: Target
   },
   { 
+    id: "qualidade_processos", 
+    label: "Qualidade de Processos", 
+    color: "bg-violet-50 border-l-4 border-l-violet-500",
+    bgColor: "bg-violet-50", 
+    count: 0,
+    icon: CheckCircle
+  },
+  { 
     id: "priorizacao", 
     label: "Priorização", 
     color: "bg-blue-50 border-l-4 border-l-blue-500",
