@@ -1,35 +1,25 @@
-
+import { Project } from "@/hooks/useProjects";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { 
-  MoreVertical, 
-  Calendar, 
-  Users, 
-  Target, 
-  TrendingUp,
-  AlertTriangle,
-  Clock
-} from "lucide-react";
-import { Project } from "@/hooks/useProjects";
+import { CalendarDays, DollarSign, Users, TrendingUp, Eye } from "lucide-react";
 
 interface ProjectGridViewProps {
   projects: Project[];
-  onProjectUpdate?: (projectId: string, updates: Partial<Project>) => void;
+  onProjectUpdate: (id: string, updates: Partial<Project>) => Promise<void>;
+  onProjectSelect: (project: Project) => void;
 }
 
-const ProjectGridView = ({ projects, onProjectUpdate }: ProjectGridViewProps) => {
+const ProjectGridView = ({ projects, onProjectUpdate, onProjectSelect }: ProjectGridViewProps) => {
   const getStatusColor = (status: string) => {
     const colors = {
-      ideacao: "bg-blue-100 text-blue-800",
-      planejamento: "bg-yellow-100 text-yellow-800",
-      desenvolvimento: "bg-primary/10 text-primary",
+      ideacao: "bg-purple-100 text-purple-800",
+      planejamento: "bg-blue-100 text-blue-800", 
+      desenvolvimento: "bg-yellow-100 text-yellow-800",
       homologacao: "bg-orange-100 text-orange-800",
       producao: "bg-green-100 text-green-800",
-      suspenso: "bg-red-100 text-red-800",
-      concluido: "bg-accent/10 text-accent"
+      suspenso: "bg-gray-100 text-gray-800",
+      concluido: "bg-emerald-100 text-emerald-800"
     };
     return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
@@ -41,80 +31,32 @@ const ProjectGridView = ({ projects, onProjectUpdate }: ProjectGridViewProps) =>
     return "text-accent";
   };
 
-  const getPriorityLabel = (priority: number | null) => {
-    if (!priority) return "Não definida";
-    const labels = ["", "Muito Baixa", "Baixa", "Média", "Alta", "Crítica"];
-    return labels[priority] || "Não definida";
-  };
-
-  const formatCurrency = (value: number | null) => {
-    if (!value) return "Não definido";
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return "Não definida";
-    return new Date(dateString).toLocaleDateString('pt-BR');
-  };
-
-  const calculateProgress = (project: Project) => {
-    const statusProgress = {
-      ideacao: 10,
-      planejamento: 25,
-      desenvolvimento: 60,
-      homologacao: 85,
-      producao: 95,
-      suspenso: 0,
-      concluido: 100
-    };
-    return statusProgress[project.status] || 0;
-  };
-
-  const isOverdue = (project: Project) => {
-    if (!project.target_date || project.status === "concluido") return false;
-    return new Date(project.target_date) < new Date();
-  };
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {projects.map((project) => (
-        <Card 
-          key={project.id} 
-          className={`transition-all hover:shadow-lg ${
-            isOverdue(project) ? "border-destructive/50 bg-destructive/5" : ""
-          }`}
-        >
-          <CardHeader className="pb-3">
+        <Card key={project.id} className="hover:shadow-lg transition-shadow duration-200">
+          <CardHeader>
             <div className="flex justify-between items-start">
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg leading-tight">
-                    {project.name}
-                  </CardTitle>
-                  {isOverdue(project) && (
-                    <Clock className="h-4 w-4 text-destructive" />
-                  )}
-                </div>
+              <div className="space-y-2">
+                <CardTitle className="text-lg">{project.name}</CardTitle>
                 <div className="flex gap-2">
-                  <Badge className={getStatusColor(project.status)}>
-                    {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
+                  <Badge className={getStatusColor(project.status || "")}>
+                    {project.status}
                   </Badge>
-                  {project.methodology && (
-                    <Badge variant="outline" className="text-xs">
-                      {project.methodology}
-                    </Badge>
+                  {project.priority && project.priority >= 4 && (
+                    <Badge variant="destructive">Alta Prioridade</Badge>
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onProjectSelect(project)}
+              >
+                <Eye className="h-4 w-4" />
               </Button>
             </div>
+            
             {project.description && (
               <CardDescription className="line-clamp-2">
                 {project.description}
@@ -122,88 +64,51 @@ const ProjectGridView = ({ projects, onProjectUpdate }: ProjectGridViewProps) =>
             )}
           </CardHeader>
 
-          <CardContent className="space-y-4">
-            {/* Progress */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Progresso</span>
-                <span className="font-medium">{calculateProgress(project)}%</span>
-              </div>
-              <Progress value={calculateProgress(project)} className="h-2" />
-            </div>
-
-            {/* Métricas Grid */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-accent" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Complexidade</p>
-                  <p className="font-medium">{project.complexity_score || "N/A"}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <AlertTriangle 
-                  className={`h-4 w-4 ${getPriorityColor(project.priority)}`} 
-                />
-                <div>
-                  <p className="text-xs text-muted-foreground">Prioridade</p>
-                  <p className={`font-medium text-xs ${getPriorityColor(project.priority)}`}>
-                    {getPriorityLabel(project.priority)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* ROI */}
-            {project.estimated_roi && (
-              <div className="flex items-center gap-2 p-2 bg-rpa/5 rounded-lg">
-                <TrendingUp className="h-4 w-4 text-rpa" />
-                <div>
-                  <p className="text-xs text-muted-foreground">ROI Estimado</p>
-                  <p className="font-medium text-rpa">{formatCurrency(project.estimated_roi)}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Datas */}
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Meta:</span>
-                <span className={isOverdue(project) ? "text-destructive font-medium" : ""}>
-                  {formatDate(project.target_date)}
-                </span>
-              </div>
-            </div>
-
-            {/* Team */}
-            <div className="flex items-center justify-between pt-2 border-t">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Equipe</span>
-              </div>
-              <div className="flex -space-x-1">
-                <Avatar className="h-6 w-6 border-2 border-background">
-                  <AvatarFallback className="text-xs">
-                    {project.created_by?.slice(0, 2).toUpperCase() || "??"}
-                  </AvatarFallback>
-                </Avatar>
-                {project.assigned_architect && (
-                  <Avatar className="h-6 w-6 border-2 border-background">
-                    <AvatarFallback className="text-xs">
-                      AR
-                    </AvatarFallback>
-                  </Avatar>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Informações do projeto */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                {project.target_date && (
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <span>{new Date(project.target_date).toLocaleDateString('pt-BR')}</span>
+                  </div>
                 )}
-                {project.product_owner && (
-                  <Avatar className="h-6 w-6 border-2 border-background">
-                    <AvatarFallback className="text-xs">
-                      PO
-                    </AvatarFallback>
-                  </Avatar>
+                
+                {project.estimated_roi && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <span>
+                      {new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }).format(project.estimated_roi)}
+                    </span>
+                  </div>
                 )}
+
+                {project.methodology && (
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <span className="capitalize">{project.methodology}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <span>Equipe</span>
+                </div>
               </div>
+
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => onProjectSelect(project)}
+              >
+                Ver Detalhes
+              </Button>
             </div>
           </CardContent>
         </Card>

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Clock, User, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, Clock, User, Calendar, AlertTriangle, CheckCircle } from "lucide-react";
 import { useProjectTasks, ProjectTask } from "@/hooks/useProjectTasks";
 import { useForm } from "react-hook-form";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -288,7 +287,7 @@ const TaskManagement = ({ projectId }: TaskManagementProps) => {
         {tasks.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <CheckSquare className="h-12 w-12 text-muted-foreground mb-4" />
+              <CheckCircle className="h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Nenhuma tarefa encontrada</h3>
               <p className="text-muted-foreground text-center mb-4">
                 Comece criando a primeira tarefa para este projeto

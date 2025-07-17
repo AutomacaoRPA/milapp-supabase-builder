@@ -37,7 +37,8 @@ export const useProjectFiles = (projectId?: string) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setFiles(data || []);
+      // Cast the data to ensure type compatibility
+      setFiles((data || []) as ProjectFile[]);
     } catch (error) {
       console.error("Erro ao buscar arquivos:", error);
       toast({

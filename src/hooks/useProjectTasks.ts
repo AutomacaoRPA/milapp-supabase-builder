@@ -41,7 +41,8 @@ export const useProjectTasks = (projectId?: string) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setTasks(data || []);
+      // Cast the data to ensure type compatibility
+      setTasks((data || []) as ProjectTask[]);
     } catch (error) {
       console.error("Erro ao buscar tarefas:", error);
       toast({
