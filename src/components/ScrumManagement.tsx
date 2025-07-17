@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -426,7 +425,7 @@ const ScrumManagement = ({ project }: ScrumManagementProps) => {
                           <span>{story.title}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={getStatusColor(story.status)} size="sm">
+                          <Badge className={getStatusColor(story.status)}>
                             {story.status}
                           </Badge>
                           <span className="text-muted-foreground">{story.storyPoints} SP</span>

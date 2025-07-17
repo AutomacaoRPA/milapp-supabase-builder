@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,6 +29,25 @@ interface ProjectDetailViewProps {
 
 const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Mock stages data for ProjectStageManager
+  const mockStages = [
+    { id: "1", name: "Priorização", status: "completed" as const, order: 1, completedAt: "2025-07-14T15:34:45.926Z", assignee: "Marcus Leitão" },
+    { id: "2", name: "Hipótese Formulada", status: "completed" as const, order: 2, completedAt: "2025-07-14T15:38:49.700Z", assignee: "Marcus Leitão" },
+    { id: "3", name: "Análise de Viabilidade", status: "completed" as const, order: 3, completedAt: "2025-07-14T15:47:11.510Z", assignee: "Marcus Leitão" },
+    { id: "4", name: "Protótipo Rápido", status: "completed" as const, order: 4, duration: "5 dias", assignee: "Daniele" },
+    { id: "5", name: "Validação do Protótipo", status: "pending" as const, order: 5 },
+    { id: "6", name: "MVP", status: "pending" as const, order: 6 },
+    { id: "7", name: "Teste Operacional", status: "pending" as const, order: 7 },
+    { id: "8", name: "Escala e Entrega", status: "pending" as const, order: 8 },
+    { id: "9", name: "Acompanhamento Pós-Entrega", status: "pending" as const, order: 9 },
+    { id: "10", name: "Sustentação e Evolução", status: "in_progress" as const, order: 10 },
+  ];
+
+  const handleStageUpdate = (stageId: string, updates: any) => {
+    console.log("Updating stage:", stageId, updates);
+    // Here you would implement the actual stage update logic
+  };
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -178,7 +196,6 @@ const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          {/* Project Details */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
@@ -272,7 +289,12 @@ const ProjectDetailView = ({ project, onBack }: ProjectDetailViewProps) => {
         </TabsContent>
 
         <TabsContent value="pipeline">
-          <ProjectStageManager project={project} />
+          <ProjectStageManager 
+            projectId={project.id}
+            currentStage={project.status}
+            stages={mockStages}
+            onStageUpdate={handleStageUpdate}
+          />
         </TabsContent>
 
         <TabsContent value="scrum">
