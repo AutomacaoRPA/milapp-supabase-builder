@@ -14,6 +14,7 @@ import QualityGates from "./pages/QualityGates";
 import Deployments from "./pages/Deployments";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import DetailedInnovationProject from "./components/DetailedInnovationProject";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,11 @@ const App = () => (
                 <ProtectedRoute>
                   <Navigation />
                   <Deployments />
+                </ProtectedRoute>
+              } />
+              <Route path="/projeto-detalhado" element={
+                <ProtectedRoute>
+                  <DetailedInnovationProject onBack={() => window.history.back()} />
                 </ProtectedRoute>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

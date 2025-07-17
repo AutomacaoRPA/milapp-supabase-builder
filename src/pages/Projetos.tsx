@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import ScrumBoard from "@/components/ScrumBoard";
 import ProjectStatusColumns from "@/components/ProjectStatusColumns";
 
 const Projetos = () => {
+  const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<"columns" | "kanban" | "grid" | "workitems" | "sprints" | "scrum" | "pipelines" | "devops" | "guide">("columns");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilters, setSelectedFilters] = useState({
@@ -244,6 +246,14 @@ const Projetos = () => {
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nova Ideia
+              </Button>
+
+              <Button 
+                variant="outline"
+                onClick={() => navigate('/projeto-detalhado')}
+              >
+                <Target className="h-4 w-4 mr-2" />
+                Ver Projeto Exemplo
               </Button>
             </div>
           </div>
