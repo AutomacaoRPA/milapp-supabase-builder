@@ -149,12 +149,21 @@ const ProjectStatusColumns = ({ projects, onProjectUpdate, onProjectSelect }: Pr
 
     const newStatus = destination.droppableId;
     
+    console.log("🐛 Drag Debug:", {
+      projectId: project.id,
+      oldStatus: project.status,
+      newStatus: newStatus,
+      sourceId: source.droppableId,
+      destinationId: destination.droppableId
+    });
+    
     try {
       await onProjectUpdate(project.id, { status: newStatus as any });
       
       const statusTitle = statusConfig[newStatus as keyof typeof statusConfig]?.title;
       toast.success(`Projeto movido para ${statusTitle}`);
     } catch (error) {
+      console.error("Erro ao atualizar projeto:", error);
       toast.error("Erro ao mover projeto");
     }
   };
