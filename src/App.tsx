@@ -8,6 +8,8 @@ import Navigation from "./components/Navigation";
 import Dashboard from "./pages/Dashboard";
 import ChatIA from "./pages/ChatIA";
 import Projetos from "./pages/Projetos";
+import QualityGates from "./pages/QualityGates";
+import Deployments from "./pages/Deployments";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +26,8 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/chat" element={<ChatIA />} />
             <Route path="/projetos" element={<Projetos />} />
+            <Route path="/quality-gates" element={<QualityGates />} />
+            <Route path="/deployments" element={<Deployments />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

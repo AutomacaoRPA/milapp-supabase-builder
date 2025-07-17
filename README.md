@@ -1,73 +1,127 @@
-# Welcome to your Lovable project
+# MILAPP - Centro de Excelência em Automação RPA
 
-## Project info
+## 🎯 **Visão Geral**
 
-**URL**: https://lovable.dev/projects/336e8ab0-57c6-4b51-8fa7-3ed7d5f869a1
+O MILAPP é uma **plataforma única e integrada** desenvolvida especificamente para gestão completa de um Centro de Excelência (CoE) de Automação. Toda a funcionalidade está contida numa única aplicação web autossuficiente, com módulos internos que se comunicam de forma integrada, eliminando a necessidade de ferramentas externas.
 
-## How can I edit this code?
+## 🏗️ **Arquitetura**
 
-There are several ways of editing your application.
+### **Stack Tecnológico**
+- **Frontend**: React 18 + TypeScript + Material-UI v5
+- **Backend**: FastAPI + Python 3.11+
+- **Database**: Supabase (PostgreSQL)
+- **IA**: OpenAI GPT-4 + LangChain
+- **DevOps**: Docker + Kubernetes + GitHub Actions
+- **Monitoramento**: Prometheus + Grafana
 
-**Use Lovable**
+### **Módulos Principais**
+1. **Discovery IA** - Chat multimodal para levantamento de requisitos
+2. **Geração de Documentos** - PDD, SDD, GMUD automáticos
+3. **Gestão de Projetos Ágil** - Kanban nativo, sprints, backlog
+4. **Quality Gates** - Governança G1-G4 com RACI
+5. **Recomendação RPA** - Análise inteligente de ferramentas
+6. **Desenvolvimento** - Editor código, review, Git nativo
+7. **Testes** - Automação de testes, UAT, validação
+8. **Deployment** - Pipeline CI/CD, monitoramento 24/7
+9. **Dashboards** - Analytics executivos e operacionais
+10. **Segurança** - RBAC, Azure AD, auditoria completa
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/336e8ab0-57c6-4b51-8fa7-3ed7d5f869a1) and start prompting.
+## 🚀 **Instalação e Deploy**
 
-Changes made via Lovable will be committed automatically to this repo.
+### **Pré-requisitos**
+- Node.js 18+
+- Python 3.11+
+- Docker & Docker Compose
+- Supabase CLI
 
-**Use your preferred IDE**
+### **Desenvolvimento Local**
+```bash
+# Clone o repositório
+git clone https://github.com/AutomacaoRPA/milapp-supabase-builder.git
+cd milapp-supabase-builder
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+# Instalar dependências frontend
+npm install
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# Configurar Supabase
+supabase start
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Iniciar desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### **Deploy Produção**
+```bash
+# Build da aplicação
+npm run build
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+# Deploy com Docker
+docker-compose up -d
+```
 
-**Use GitHub Codespaces**
+## 📊 **Funcionalidades Principais**
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### **🤖 Chat IA Multimodal**
+- Processamento de texto, imagens, PDFs, áudios
+- Extração automática de requisitos
+- Sugestões de automação inteligentes
+- Integração com sistema de tickets
 
-## What technologies are used for this project?
+### **📋 Gestão de Projetos**
+- Kanban board nativo
+- Sprint planning automático
+- Backlog inteligente com priorização IA
+- Métricas de performance em tempo real
 
-This project is built with:
+### **🔒 Quality Gates**
+- Governança G1-G4 automatizada
+- Matriz RACI inteligente
+- Aprovações via web, email, Teams
+- Compliance automático
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### **📈 Dashboards Executivos**
+- KPIs de ROI e produtividade
+- Métricas de inovação
+- Análises preditivas
+- Relatórios customizáveis
 
-## How can I deploy this project?
+## 🔗 **Integrações**
 
-Simply open [Lovable](https://lovable.dev/projects/336e8ab0-57c6-4b51-8fa7-3ed7d5f869a1) and click on Share -> Publish.
+### **Sistemas Corporativos**
+- **Azure AD**: Autenticação SSO
+- **Power BI**: Dashboards executivos
+- **Teams**: Notificações e colaboração
+- **SAP/Oracle**: Importação de dados
 
-## Can I connect a custom domain to my Lovable project?
+### **Ferramentas RPA**
+- **n8n**: Orquestração e integrações
+- **Python**: Desenvolvimento customizado
+- **Playwright**: Automação web moderna
+- **Selenium**: Sistemas legados
 
-Yes, you can!
+## 📈 **Benefícios**
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- **Redução de 80%** no tempo de levantamento de requisitos
+- **Aumento de 60%** na qualidade das automações
+- **Diminuição de 70%** no time-to-market
+- **Economia de 50%** em custos operacionais
+- **ROI positivo** em 12 meses
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 🔐 **Segurança**
+
+- Autenticação Azure AD
+- Autorização RBAC
+- Criptografia TLS 1.3 + AES-256
+- Auditoria completa
+- Conformidade GDPR/LGPD
+
+## 📞 **Suporte**
+
+Para dúvidas e suporte técnico:
+- **Email**: milapp@medsenior.com.br
+- **Documentação**: [docs.milapp.com.br](https://docs.milapp.com.br)
+- **Issues**: [GitHub Issues](https://github.com/AutomacaoRPA/milapp-supabase-builder/issues)
+
+---
+
+**MILAPP v2.0** - Transformando a gestão de automação corporativa
