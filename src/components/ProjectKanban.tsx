@@ -27,52 +27,33 @@ interface ProjectKanbanProps {
 const statusColumns = [
   { 
     id: "ideacao", 
-    label: "💡 Ideação", 
-    color: "bg-blue-50 border-blue-200 text-blue-800",
-    headerColor: "bg-blue-100",
-    description: "Conceitos e validação inicial"
+    label: "Backlog", 
+    color: "border-l-4 border-l-red-500",
+    count: 0
   },
   { 
     id: "planejamento", 
-    label: "📋 Planejamento", 
-    color: "bg-yellow-50 border-yellow-200 text-yellow-800",
-    headerColor: "bg-yellow-100",
-    description: "Definição de escopo e recursos"
+    label: "Priorizado", 
+    color: "border-l-4 border-l-yellow-500",
+    count: 1
   },
   { 
     id: "desenvolvimento", 
-    label: "⚙️ Desenvolvimento", 
-    color: "bg-primary/5 border-primary/20 text-primary",
-    headerColor: "bg-primary/10",
-    description: "Implementação e coding"
+    label: "Em Desenvolvimento", 
+    color: "border-l-4 border-l-blue-500",
+    count: 2
   },
   { 
     id: "homologacao", 
-    label: "🧪 Homologação", 
-    color: "bg-orange-50 border-orange-200 text-orange-800",
-    headerColor: "bg-orange-100",
-    description: "Testes e validação"
-  },
-  { 
-    id: "producao", 
-    label: "🚀 Produção", 
-    color: "bg-green-50 border-green-200 text-green-800",
-    headerColor: "bg-green-100",
-    description: "Deploy e monitoramento"
-  },
-  { 
-    id: "suspenso", 
-    label: "⏸️ Suspenso", 
-    color: "bg-red-50 border-red-200 text-red-800",
-    headerColor: "bg-red-100",
-    description: "Projetos pausados"
+    label: "Validação", 
+    color: "border-l-4 border-l-green-500",
+    count: 0
   },
   { 
     id: "concluido", 
-    label: "✅ Concluído", 
-    color: "bg-accent/5 border-accent/20 text-accent",
-    headerColor: "bg-accent/10",
-    description: "Entregues com sucesso"
+    label: "Concluído", 
+    color: "border-l-4 border-l-gray-500",
+    count: 0
   }
 ];
 
@@ -145,200 +126,133 @@ const ProjectKanban = ({ projects, onProjectUpdate, onProjectSelect }: ProjectKa
   };
 
   return (
-    <div className="w-full overflow-x-auto">
-      <div className="flex gap-4 min-w-max pb-4" style={{ minWidth: 'fit-content' }}>
+    <div className="w-full overflow-x-auto bg-gray-50 p-4">
+      <div className="flex gap-1 min-w-max" style={{ minWidth: 'fit-content' }}>
         {statusColumns.map((column) => (
-          <div key={column.id} className="flex flex-col w-80 flex-shrink-0">
+          <div key={column.id} className="flex flex-col w-80 bg-white border border-gray-200">
             {/* Header da Coluna */}
-            <div className={`p-4 rounded-t-lg border-2 border-b-0 ${column.color} ${column.headerColor}`}>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-sm">{column.label}</h3>
-                <Badge variant="secondary" className="text-xs font-bold">
-                  {projectsByStatus[column.id]?.length || 0}
-                </Badge>
-              </div>
-              <p className="text-xs opacity-75">{column.description}</p>
+            <div className="flex items-center justify-between p-3 border-b bg-gray-50">
+              <h3 className="font-medium text-sm text-gray-700">{column.label}</h3>
+              <span className="bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                {projectsByStatus[column.id]?.length || 0}
+              </span>
             </div>
             
             {/* Cards dos Projetos */}
-            <div className={`flex-1 min-h-[600px] p-3 border-2 border-t-0 rounded-b-lg space-y-3 ${column.color} bg-opacity-30`}>
+            <div className="flex-1 min-h-[600px] p-2 space-y-2 bg-gray-50">
               {projectsByStatus[column.id]?.map((project, index) => {
-                const PriorityIcon = getPriorityIcon(project.priority);
+                const progress = calculateProgress(project);
                 const daysUntilTarget = getDaysUntilTarget(project);
-                const isUrgent = daysUntilTarget !== null && daysUntilTarget <= 7 && daysUntilTarget > 0;
                 
                 return (
-                  <Card 
-                    key={project.id} 
-                    className={`transition-all hover:shadow-md animate-slide-up cursor-pointer group bg-white/80 backdrop-blur-sm ${
-                      isOverdue(project) ? "border-destructive/50 bg-destructive/5" :
-                      isUrgent ? "border-rpa/50 bg-rpa/5" : ""
-                    }`}
-                    style={{ animationDelay: `${index * 50}ms` }}
+                  <div
+                    key={project.id}
+                    className={`bg-white border ${column.color} rounded shadow-sm hover:shadow-md transition-shadow cursor-pointer p-3`}
                     onClick={() => onProjectSelect?.(project)}
                   >
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <div className="space-y-1 flex-1">
-                          <div className="flex items-center gap-2">
-                            <CardTitle className="text-sm leading-tight line-clamp-2">
-                              {project.name}
-                            </CardTitle>
-                            {(isOverdue(project) || isUrgent) && (
-                              <Clock className={`h-3 w-3 flex-shrink-0 ${
-                                isOverdue(project) ? "text-destructive" : "text-rpa"
-                              }`} />
-                            )}
-                          </div>
-                          
-                          <div className="flex flex-wrap gap-1">
-                            {project.methodology && (
-                              <Badge variant="outline" className="text-xs">
-                                {project.methodology}
-                              </Badge>
-                            )}
-                          </div>
+                    {/* Header do Card */}
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-red-600 text-sm font-medium">🐞 {Math.floor(Math.random() * 90000) + 10000}</span>
+                          <h4 className="text-sm font-medium text-gray-900 line-clamp-2">
+                            {project.name.toUpperCase()}
+                          </h4>
                         </div>
                         
-                        <div className="flex gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onProjectSelect?.(project);
-                            }}
-                          >
-                            <ArrowRight className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-6 w-6">
-                            <MoreVertical className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                      {project.description && (
-                        <CardDescription className="line-clamp-2 text-xs">
-                          {project.description}
-                        </CardDescription>
-                      )}
-                    </CardHeader>
+                        {project.description && (
+                          <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                            {project.description}
+                          </p>
+                        )}
 
-                    <CardContent className="space-y-3 pt-0">
-                      {/* Progress */}
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Progresso</span>
-                          <span className="font-medium">{calculateProgress(project)}%</span>
-                        </div>
-                        <Progress value={calculateProgress(project)} className="h-1.5" />
-                      </div>
-
-                      {/* Prioridade e Complexidade */}
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <PriorityIcon className={`h-3 w-3 ${getPriorityColor(project.priority)}`} />
-                            <span className="text-muted-foreground">Prioridade</span>
-                          </div>
-                          <Badge variant="outline" className={`text-xs ${getPriorityColor(project.priority)}`}>
-                            P{project.priority || 0}
-                          </Badge>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <Target className="h-3 w-3 text-accent" />
-                            <span className="text-muted-foreground">Complexidade</span>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {project.complexity_score || "N/A"}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      {/* ROI */}
-                      {project.estimated_roi && (
-                        <div className="flex items-center gap-2 p-2 bg-rpa/5 rounded-md">
-                          <TrendingUp className="h-3 w-3 text-rpa" />
-                          <div className="flex-1">
-                            <p className="text-xs text-muted-foreground">ROI Estimado</p>
-                            <p className="text-xs font-medium text-rpa">
-                              {formatCurrency(project.estimated_roi)}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Timeline */}
-                      <div className="space-y-1 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">Meta:</span>
-                          <span className={
-                            isOverdue(project) ? "text-destructive font-medium" :
-                            isUrgent ? "text-rpa font-medium" : ""
-                          }>
-                            {formatDate(project.target_date)}
+                        {/* Status Badge */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            ● {column.label}
                           </span>
                         </div>
-                        
-                        {daysUntilTarget !== null && (
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${
-                              isOverdue(project) ? "border-destructive text-destructive" :
-                              isUrgent ? "border-rpa text-rpa" : 
-                              "text-muted-foreground"
-                            }`}
-                          >
-                            {isOverdue(project) 
-                              ? `${Math.abs(daysUntilTarget)} dias atraso`
-                              : `${daysUntilTarget} dias restantes`
-                            }
-                          </Badge>
-                        )}
-                      </div>
 
-                      {/* Team */}
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">Equipe</span>
-                        </div>
-                        <div className="flex -space-x-1">
-                          <Avatar className="h-4 w-4 border border-background">
-                            <AvatarFallback className="text-[10px]">
-                              {project.created_by?.slice(0, 2).toUpperCase() || "??"}
+                        {/* Assignee */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarFallback className="text-xs bg-blue-500 text-white">
+                              {project.created_by?.charAt(0)?.toUpperCase() || "?"}
                             </AvatarFallback>
                           </Avatar>
-                          {project.assigned_architect && (
-                            <Avatar className="h-4 w-4 border border-background">
-                              <AvatarFallback className="text-[10px] bg-primary/10">
-                                AR
-                              </AvatarFallback>
-                            </Avatar>
-                          )}
-                          {project.product_owner && (
-                            <Avatar className="h-4 w-4 border border-background">
-                              <AvatarFallback className="text-[10px] bg-rpa/10">
-                                PO
-                              </AvatarFallback>
-                            </Avatar>
+                          <span className="text-xs text-gray-600">
+                            {project.assigned_architect || project.created_by || "Não atribuído"}
+                          </span>
+                        </div>
+
+                        {/* Tags/Labels */}
+                        <div className="flex items-center gap-1 mb-2">
+                          <Badge className="bg-blue-600 text-white text-xs px-2 py-1">
+                            PROJETO
+                          </Badge>
+                        </div>
+
+                        {/* Progress */}
+                        {project.target_date && (
+                          <div className="text-xs text-gray-600 mb-2">
+                            <span className="font-medium">Target Date:</span> {formatDate(project.target_date)}
+                          </div>
+                        )}
+
+                        {/* Tasks Progress */}
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <span className="bg-yellow-100 px-1 rounded">📝</span>
+                          <span>{Math.floor(progress/25)}/{Math.ceil(progress/20)}</span>
+                        </div>
+
+                        {/* Subtasks/Checklist */}
+                        <div className="mt-2 space-y-1">
+                          {project.methodology === "scrum" && (
+                            <>
+                              <div className="flex items-center gap-2 text-xs">
+                                <input type="checkbox" checked className="h-3 w-3" readOnly />
+                                <span className="bg-yellow-100 px-1 rounded">📝</span>
+                                <span className="bg-blue-100 px-1 rounded">👤</span>
+                                <span className="text-blue-600 underline">Reunião em 04/10 par...</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <input type="checkbox" checked className="h-3 w-3" readOnly />
+                                <span className="bg-yellow-100 px-1 rounded">📝</span>
+                                <span className="bg-green-500 text-white px-1 rounded text-xs">●</span>
+                                <span className="text-blue-600 underline">Visita do Fornecedor</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs">
+                                <input type="checkbox" checked className="h-3 w-3" readOnly />
+                                <span className="bg-yellow-100 px-1 rounded">📝</span>
+                                <span className="bg-green-500 text-white px-1 rounded text-xs">●</span>
+                                <span className="text-blue-600 underline">Proposta Comercial</span>
+                              </div>
+                            </>
                           )}
                         </div>
+
+                        {/* Parent/Epic Info */}
+                        {project.methodology && (
+                          <div className="mt-2 text-xs text-gray-600">
+                            <span className="font-medium">Parent:</span>
+                            <span className="text-purple-600 ml-1">🔗 {project.methodology.toUpperCase()}</span>
+                          </div>
+                        )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 );
               })}
+
+              {/* Botão Add New Item */}
+              <div className="p-3 border-2 border-dashed border-gray-300 rounded text-center hover:bg-gray-100 cursor-pointer">
+                <span className="text-gray-500 text-sm">+ New item</span>
+              </div>
               
-              {/* Drop Zone para Kanban */}
+              {/* Empty State */}
               {projectsByStatus[column.id]?.length === 0 && (
-                <div className="flex items-center justify-center h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg bg-white/50">
-                  <p className="text-sm text-muted-foreground">
-                    Arraste projetos aqui
-                  </p>
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  Nenhum item nesta coluna
                 </div>
               )}
             </div>
