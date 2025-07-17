@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,10 +46,10 @@ const PDDProjectView = ({ project, onBack }: PDDProjectViewProps) => {
     risks: ""
   });
 
-  // Mock stages data
+  // Mock stages data with proper status types
   const stages = [
-    { id: "1", name: "Priorização", status: "in_progress" as const, order: 1 },
-    { id: "2", name: "Hipótese Formulada", status: "pending" as const, order: 2 },
+    { id: "1", name: "Priorização", status: "completed" as const, order: 1 },
+    { id: "2", name: "Hipótese Formulada", status: "in_progress" as const, order: 2 },
     { id: "3", name: "Análise de Viabilidade", status: "pending" as const, order: 3 },
     { id: "4", name: "Protótipo Rápido", status: "pending" as const, order: 4 },
     { id: "5", name: "Validação do Protótipo", status: "pending" as const, order: 5 },
