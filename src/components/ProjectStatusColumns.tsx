@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Eye, Calendar, DollarSign, Users, AlertTriangle } from "lucide-react";
+import { Eye, Calendar, DollarSign, Users, AlertTriangle, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { toast } from "sonner";
 
 interface ProjectStatusColumnsProps {
   projects: Project[];
@@ -136,132 +138,179 @@ const ProjectStatusColumns = ({ projects, onProjectUpdate, onProjectSelect }: Pr
     return new Date(targetDate) < new Date();
   };
 
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+    if (destination.droppableId === source.droppableId && destination.index === source.index) return;
+
+    const project = projects.find(p => p.id === draggableId);
+    if (!project) return;
+
+    const newStatus = destination.droppableId;
+    
+    try {
+      await onProjectUpdate(project.id, { status: newStatus as any });
+      
+      const statusTitle = statusConfig[newStatus as keyof typeof statusConfig]?.title;
+      toast.success(`Projeto movido para ${statusTitle}`);
+    } catch (error) {
+      toast.error("Erro ao mover projeto");
+    }
+  };
+
   return (
-    <div className="flex gap-6 overflow-x-auto pb-4 min-h-[600px]">
-      {Object.entries(statusConfig).map(([status, config]) => {
-        const statusProjects = getProjectsByStatus(status);
-        
-        return (
-          <div key={status} className="flex-shrink-0 w-80">
-            {/* Column Header */}
-            <div className={`${config.headerColor} p-4 rounded-t-lg border-b`}>
-              <div className="flex justify-between items-center">
-                <h3 className="font-semibold text-lg">{config.title}</h3>
-                <Badge variant="secondary" className="text-sm">
-                  {config.count}
-                </Badge>
-              </div>
-            </div>
-
-            {/* Projects List */}
-            <div className={`${config.color} min-h-[500px] rounded-b-lg p-4 space-y-4`}>
-              {statusProjects.map((project) => (
-                <Card key={project.id} className="bg-white hover:shadow-md transition-shadow cursor-pointer">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="font-mono text-xs">
-                            ID #{project.id.slice(-3)}
-                          </Badge>
-                          {project.priority && project.priority >= 4 && (
-                            <AlertTriangle className="h-4 w-4 text-red-500" />
-                          )}
-                          {project.target_date && isOverdue(project.target_date) && (
-                            <Badge variant="destructive" className="text-xs">
-                              Atrasado
-                            </Badge>
-                          )}
-                        </div>
-                        <CardTitle className="text-sm leading-tight line-clamp-2">
-                          {project.name}
-                        </CardTitle>
-                        {project.methodology && getMethodologyBadge(project.methodology)}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onProjectSelect(project)}
-                        className="ml-2"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-3">
-                    {project.description && (
-                      <CardDescription className="text-xs line-clamp-3">
-                        {project.description}
-                      </CardDescription>
-                    )}
-
-                    {/* Progress Bar */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-medium">Progresso</span>
-                        <span className="text-xs text-muted-foreground">
-                          {getProjectProgress(project)}%
-                        </span>
-                      </div>
-                      <Progress value={getProjectProgress(project)} className="h-2" />
-                      <span className="text-xs text-muted-foreground">
-                        {project.status === "desenvolvimento" ? "Em andamento" : 
-                         project.status === "planejamento" ? "Progredindo" : "Iniciando"}
-                      </span>
-                    </div>
-
-                    {/* Project Info */}
-                    <div className="grid grid-cols-1 gap-2 text-xs">
-                      {project.target_date && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span>{new Date(project.target_date).toLocaleDateString('pt-BR')}</span>
-                        </div>
-                      )}
-                      
-                      {project.estimated_roi && (
-                        <div className="flex items-center gap-2">
-                          <DollarSign className="h-3 w-3 text-muted-foreground" />
-                          <span>
-                            {new Intl.NumberFormat('pt-BR', {
-                              style: 'currency',
-                              currency: 'BRL',
-                              minimumFractionDigits: 0,
-                              maximumFractionDigits: 0,
-                            }).format(project.estimated_roi)}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-2">
-                        <Users className="h-3 w-3 text-muted-foreground" />
-                        <span>{project.assigned_architect ? "Atribuído" : "Não atribuído"}</span>
-                      </div>
-                    </div>
-
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full mt-3"
-                      onClick={() => onProjectSelect(project)}
-                    >
-                      Detalhes
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {statusProjects.length === 0 && (
-                <div className="flex items-center justify-center h-32 text-muted-foreground">
-                  <span className="text-sm">Nenhum projeto neste status</span>
+    <DragDropContext onDragEnd={handleDragEnd}>
+      <div className="flex gap-6 overflow-x-auto pb-4 min-h-[600px]">
+        {Object.entries(statusConfig).map(([status, config]) => {
+          const statusProjects = getProjectsByStatus(status);
+          
+          return (
+            <div key={status} className="flex-shrink-0 w-80">
+              {/* Column Header */}
+              <div className={`${config.headerColor} p-4 rounded-t-lg border-b`}>
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold text-lg">{config.title}</h3>
+                  <Badge variant="secondary" className="text-sm">
+                    {config.count}
+                  </Badge>
                 </div>
-              )}
+              </div>
+
+              {/* Projects List */}
+              <Droppable droppableId={status}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`${config.color} min-h-[500px] rounded-b-lg p-4 space-y-4 transition-colors ${
+                      snapshot.isDraggingOver ? 'bg-opacity-70' : ''
+                    }`}
+                  >
+                    {statusProjects.map((project, index) => (
+                      <Draggable key={project.id} draggableId={project.id} index={index}>
+                        {(provided, snapshot) => (
+                          <Card
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`bg-white hover:shadow-md transition-all cursor-pointer ${
+                              snapshot.isDragging ? 'shadow-lg rotate-1' : ''
+                            }`}
+                          >
+                            <CardHeader className="pb-3">
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-2 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      {...provided.dragHandleProps}
+                                      className="cursor-grab active:cursor-grabbing"
+                                    >
+                                      <GripVertical className="h-4 w-4 text-gray-400" />
+                                    </div>
+                                    <Badge variant="outline" className="font-mono text-xs">
+                                      ID #{project.id.slice(-3)}
+                                    </Badge>
+                                    {project.priority && project.priority >= 4 && (
+                                      <AlertTriangle className="h-4 w-4 text-red-500" />
+                                    )}
+                                    {project.target_date && isOverdue(project.target_date) && (
+                                      <Badge variant="destructive" className="text-xs">
+                                        Atrasado
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <CardTitle className="text-sm leading-tight line-clamp-2">
+                                    {project.name}
+                                  </CardTitle>
+                                  {project.methodology && getMethodologyBadge(project.methodology)}
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => onProjectSelect(project)}
+                                  className="ml-2"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </CardHeader>
+
+                            <CardContent className="space-y-3">
+                              {project.description && (
+                                <CardDescription className="text-xs line-clamp-3">
+                                  {project.description}
+                                </CardDescription>
+                              )}
+
+                              {/* Progress Bar */}
+                              <div className="space-y-2">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-medium">Progresso</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {getProjectProgress(project)}%
+                                  </span>
+                                </div>
+                                <Progress value={getProjectProgress(project)} className="h-2" />
+                              </div>
+
+                              {/* Project Info */}
+                              <div className="grid grid-cols-1 gap-2 text-xs">
+                                {project.target_date && (
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                                    <span>{new Date(project.target_date).toLocaleDateString('pt-BR')}</span>
+                                  </div>
+                                )}
+                                
+                                {project.estimated_roi && (
+                                  <div className="flex items-center gap-2">
+                                    <DollarSign className="h-3 w-3 text-muted-foreground" />
+                                    <span>
+                                      {new Intl.NumberFormat('pt-BR', {
+                                        style: 'currency',
+                                        currency: 'BRL',
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0,
+                                      }).format(project.estimated_roi)}
+                                    </span>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-3 w-3 text-muted-foreground" />
+                                  <span>{project.assigned_architect ? "Atribuído" : "Não atribuído"}</span>
+                                </div>
+                              </div>
+
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full mt-3"
+                                onClick={() => onProjectSelect(project)}
+                              >
+                                Detalhes
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        )}
+                      </Draggable>
+                    ))}
+                    
+                    {provided.placeholder}
+
+                    {statusProjects.length === 0 && (
+                      <div className="flex items-center justify-center h-32 text-muted-foreground">
+                        <span className="text-sm">Nenhum projeto neste status</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Droppable>
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+    </DragDropContext>
   );
 };
 
