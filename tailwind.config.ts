@@ -18,6 +18,11 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				'heading': ['Darker Grotesque', 'system-ui', 'sans-serif'],
+				'body': ['Antique Olive', 'system-ui', 'sans-serif'],
+				'sans': ['Antique Olive', 'system-ui', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -27,11 +32,13 @@ export default {
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',
-					glow: 'hsl(var(--primary-glow))'
+					light: 'hsl(var(--primary-light))',
+					dark: 'hsl(var(--primary-dark))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
+					foreground: 'hsl(var(--secondary-foreground))',
+					light: 'hsl(var(--secondary-light))'
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
@@ -45,9 +52,17 @@ export default {
 					DEFAULT: 'hsl(var(--accent))',
 					foreground: 'hsl(var(--accent-foreground))'
 				},
-				rpa: {
-					DEFAULT: 'hsl(var(--rpa))',
-					foreground: 'hsl(var(--rpa-foreground))'
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -66,6 +81,21 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// MedSênior Brand Extensions
+				medsenior: {
+					green: {
+						50: 'hsl(74 25% 95%)',
+						100: 'hsl(74 25% 85%)',
+						200: 'hsl(74 35% 75%)',
+						300: 'hsl(74 45% 65%)',
+						400: 'hsl(74 55% 55%)',
+						500: 'hsl(142 40% 33%)', // Primary
+						600: 'hsl(159 37% 20%)',
+						700: 'hsl(159 45% 15%)',
+						800: 'hsl(159 50% 12%)',
+						900: 'hsl(159 55% 8%)',
+					}
 				}
 			},
 			borderRadius: {
@@ -114,12 +144,14 @@ export default {
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
+				'gradient-secondary': 'var(--gradient-secondary)',
 				'gradient-accent': 'var(--gradient-accent)',
-				'gradient-rpa': 'var(--gradient-rpa)'
+				'gradient-brand': 'var(--gradient-brand)'
 			},
 			boxShadow: {
 				'primary': 'var(--shadow-primary)',
-				'glow': 'var(--shadow-glow)'
+				'glow': 'var(--shadow-glow)',
+				'brand': 'var(--shadow-brand)'
 			}
 		}
 	},

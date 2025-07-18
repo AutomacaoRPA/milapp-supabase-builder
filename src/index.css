@@ -8,54 +8,66 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* MedSênior Brand Colors */
+    /* MedSênior Brand Colors - Bem Envelhecer */
     --background: 0 0% 100%;
-    --foreground: 220 13% 18%;
+    --foreground: 155 45% 25%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 13% 18%;
+    --card-foreground: 155 45% 25%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 18%;
+    --popover-foreground: 155 45% 25%;
 
-    /* Primary: MedSênior Blue */
-    --primary: 220 100% 50%;
+    /* Primary Colors - MedSênior Green Palette */
+    --primary: 142 40% 33%; /* #327746 - Verde principal MedSênior */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 220 100% 70%;
+    --primary-light: 74 67% 44%; /* #95c11f - Verde claro */
+    --primary-dark: 159 37% 20%; /* #20463c - Verde escuro */
 
-    /* Secondary: MedSênior Gray */
-    --secondary: 220 13% 95%;
-    --secondary-foreground: 220 13% 18%;
+    /* Secondary Colors - Supporting Palette */
+    --secondary: 74 42% 51%; /* #4aa455 - Verde médio */
+    --secondary-foreground: 0 0% 100%;
+    --secondary-light: 69 49% 61%; /* #bfcf52 - Verde amarelado */
 
-    --muted: 220 13% 96%;
-    --muted-foreground: 220 9% 46%;
+    /* Accent Colors */
+    --accent: 58 73% 65%; /* #e7e365 - Amarelo esverdeado */
+    --accent-foreground: 155 45% 25%;
 
-    /* Accent: Innovation Green */
-    --accent: 142 76% 36%;
-    --accent-foreground: 0 0% 100%;
-
-    /* RPA Orange */
-    --rpa: 25 95% 53%;
-    --rpa-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
+    /* Support Colors from MedSênior Secondary Palette */
+    --success: 142 40% 33%; /* Verde MedSênior */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 35 85% 55%; /* #e69732 - Laranja MedSênior */
+    --warning-foreground: 0 0% 100%;
+    
+    --destructive: 4 75% 47%; /* #c32f26 - Vermelho MedSênior */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 220 100% 50%;
+    --info: 230 48% 52%; /* #2b3571 - Azul MedSênior */
+    --info-foreground: 0 0% 100%;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(142 76% 50%));
-    --gradient-rpa: linear-gradient(135deg, hsl(var(--rpa)), hsl(25 95% 65%));
+    /* UI Elements */
+    --muted: 74 25% 85%; /* #c8da98 - Verde claro acinzentado */
+    --muted-foreground: 155 45% 35%;
 
-    /* Shadows */
-    --shadow-primary: 0 10px 30px -10px hsl(var(--primary) / 0.3);
-    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.4);
+    --border: 74 25% 85%;
+    --input: 74 25% 85%;
+    --ring: 142 40% 33%;
+
+    /* MedSênior Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(142 40% 33%), hsl(74 67% 44%));
+    --gradient-secondary: linear-gradient(135deg, hsl(74 42% 51%), hsl(69 49% 61%));
+    --gradient-accent: linear-gradient(135deg, hsl(58 73% 65%), hsl(69 49% 61%));
+    --gradient-brand: linear-gradient(135deg, hsl(159 37% 20%), hsl(142 40% 33%), hsl(74 67% 44%));
+
+    /* Shadows with MedSênior Brand Colors */
+    --shadow-primary: 0 10px 30px -10px hsl(142 40% 33% / 0.3);
+    --shadow-glow: 0 0 40px hsl(74 67% 44% / 0.4);
+    --shadow-brand: 0 4px 20px hsl(142 40% 33% / 0.15);
 
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 
     --radius: 0.5rem;
 
@@ -77,45 +89,61 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 220 13% 9%;
-    --foreground: 0 0% 95%;
+    /* MedSênior Dark Theme - Adaptação do Bem Envelhecer */
+    --background: 159 37% 8%; /* Verde escuro base */
+    --foreground: 74 25% 90%;
 
-    --card: 220 13% 12%;
-    --card-foreground: 0 0% 95%;
+    --card: 159 37% 12%;
+    --card-foreground: 74 25% 90%;
 
-    --popover: 220 13% 12%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 159 37% 12%;
+    --popover-foreground: 74 25% 90%;
 
-    --primary: 220 100% 60%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 220 100% 75%;
+    /* Primary Colors - Tons mais claros para dark mode */
+    --primary: 74 67% 55%; /* Verde claro principal */
+    --primary-foreground: 159 37% 8%;
+    --primary-light: 74 67% 65%;
+    --primary-dark: 142 40% 25%;
 
-    --secondary: 220 13% 18%;
-    --secondary-foreground: 0 0% 95%;
+    /* Secondary Colors */
+    --secondary: 142 40% 25%;
+    --secondary-foreground: 74 25% 90%;
+    --secondary-light: 69 49% 45%;
 
-    --muted: 220 13% 18%;
-    --muted-foreground: 220 9% 65%;
+    /* Accent Colors */
+    --accent: 58 73% 75%;
+    --accent-foreground: 159 37% 15%;
 
-    --accent: 142 76% 45%;
-    --accent-foreground: 0 0% 100%;
-
-    --rpa: 25 95% 60%;
-    --rpa-foreground: 0 0% 100%;
-
-    --destructive: 0 75% 55%;
+    /* Support Colors - Adaptados para dark mode */
+    --success: 74 67% 55%;
+    --success-foreground: 159 37% 8%;
+    
+    --warning: 35 85% 65%;
+    --warning-foreground: 159 37% 8%;
+    
+    --destructive: 4 75% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 18%;
-    --input: 220 13% 18%;
-    --ring: 220 100% 60%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --info: 230 48% 65%;
+    --info-foreground: 159 37% 8%;
+
+    /* UI Elements */
+    --muted: 159 37% 18%;
+    --muted-foreground: 74 25% 65%;
+
+    --border: 159 37% 18%;
+    --input: 159 37% 18%;
+    --ring: 74 67% 55%;
+
+    /* Sidebar adaptado */
+    --sidebar-background: 159 37% 10%;
+    --sidebar-foreground: 74 25% 85%;
+    --sidebar-primary: 74 67% 55%;
+    --sidebar-primary-foreground: 159 37% 8%;
+    --sidebar-accent: 159 37% 15%;
+    --sidebar-accent-foreground: 74 25% 85%;
+    --sidebar-border: 159 37% 15%;
+    --sidebar-ring: 74 67% 55%;
   }
 }
 
@@ -125,6 +153,12 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-body;
+    font-family: 'Antique Olive', 'Inter', 'system-ui', 'Avenir', 'Helvetica', 'Arial', sans-serif;
+  }
+  
+  /* Aplicar tipografia de heading */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
   }
 }

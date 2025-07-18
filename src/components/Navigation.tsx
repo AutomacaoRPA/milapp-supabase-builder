@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { MedSeniorLogo } from "@/components/MedSeniorLogo";
 import { 
   Home, 
   MessageSquare, 
@@ -41,14 +42,15 @@ const Navigation = () => {
         <div className="flex justify-between h-16">
           {/* Logo e Navegação Principal */}
           <div className="flex items-center">
-            {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">M</span>
+            {/* Logo MedSênior */}
+            <Link to="/" className="flex items-center space-x-3">
+              <MedSeniorLogo size="sm" showTagline={false} />
+              <div className="hidden sm:block border-l border-border pl-3">
+                <span className="text-lg font-heading font-bold text-primary">
+                  MILAPP
+                </span>
+                <p className="text-xs text-muted-foreground">Centro de Excelência RPA</p>
               </div>
-              <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                MILAPP
-              </span>
             </Link>
 
             {/* Navegação Desktop */}

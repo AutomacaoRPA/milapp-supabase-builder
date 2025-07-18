@@ -67,27 +67,33 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 font-body">
       {/* Hero Section */}
       <div className="container mx-auto px-6 py-16">
         <div className="text-center space-y-6 mb-16">
-          <Badge variant="outline" className="px-4 py-2 text-sm">
+          <Badge variant="outline" className="px-4 py-2 text-sm border-primary/20 text-primary">
             <Zap className="h-4 w-4 mr-2" />
-            Centro de Excelência em RPA
+            Centro de Excelência em RPA • MedSênior
           </Badge>
           
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            MILAPP
-          </h1>
+          {/* Logo MedSênior Style */}
+          <div className="space-y-2">
+            <h1 className="text-5xl md:text-7xl font-heading font-bold text-primary">
+              MILAPP
+            </h1>
+            <p className="text-lg font-heading font-medium text-primary/80 tracking-wide">
+              bem envelhecer
+            </p>
+          </div>
           
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto">
-            Plataforma completa para descoberta, desenvolvimento e deploy de automações RPA com governança avançada
+          <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto font-body">
+            Plataforma completa para descoberta, desenvolvimento e deploy de automações RPA com governança avançada e foco no bem-estar organizacional
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Button 
               size="lg" 
-              className="bg-gradient-primary hover:opacity-90"
+              variant="brand"
               onClick={() => navigate('/auth')}
             >
               <LogIn className="h-5 w-5 mr-2" />
@@ -150,7 +156,7 @@ const Index = () => {
         </div>
 
         {/* Benefícios */}
-        <Card className="bg-gradient-primary text-primary-foreground">
+        <Card className="bg-gradient-brand text-white shadow-primary">
           <CardContent className="p-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
               <div className="space-y-2">
