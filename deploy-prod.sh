@@ -33,8 +33,8 @@ echo "🔨 Construindo aplicação para produção..."
 npm run build:prod
 
 # Deploy para Supabase Produção
-echo "🗄️ Sincronizando com Supabase Produção..."
-# npx supabase db push --project-ref ktuvnllzmpsdgstsgbib
+echo "🗄️ Sincronizando com Supabase Produção (base limpa)..."
+# npx supabase db push --project-ref ktuvnllzmpsdgstsgbib --local supabase-prod
 
 # Deploy para hosting
 echo "🌐 Fazendo deploy para hosting..."
