@@ -8,14 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { ChevronDown, Sparkles, Save, ArrowRight } from "lucide-react";
+import { PrioritizationFormData } from "@/types/forms";
 
 interface PrioritizationFormProps {
-  onComplete: (data: any) => void;
-  onSaveDraft: (data: any) => void;
+  onComplete: (data: PrioritizationFormData) => void;
+  onSaveDraft: (data: PrioritizationFormData) => void;
 }
 
 const PrioritizationForm = ({ onComplete, onSaveDraft }: PrioritizationFormProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<PrioritizationFormData>({
     leadership: "",
     startDate: "",
     endDate: "",

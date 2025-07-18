@@ -18,13 +18,11 @@ export interface PrioritizationFormData {
   leadership: string;
   startDate: string;
   endDate: string;
-  businessValue: number;
-  technicalComplexity: number;
-  resourceAvailability: number;
-  marketUrgency: number;
-  riskLevel: number;
-  dependencies: string;
-  successCriteria: string;
+  strategicAlignment: string;
+  impact: string;
+  viability: string;
+  effort: string;
+  innovationHorizon: string;
 }
 
 export interface TaskFormData {

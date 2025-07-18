@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Project } from "@/hooks/useProjects";
+import { PrioritizationFormData } from "@/types/forms";
 import StageProgressCard from "./StageProgressCard";
 import PrioritizationForm from "./PrioritizationForm";
 import AIToolsPanel from "./AIToolsPanel";
