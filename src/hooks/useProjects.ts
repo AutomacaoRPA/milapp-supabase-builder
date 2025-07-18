@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { environmentManager } from "@/lib/environment";
 
 export interface Project {
   id: string;
@@ -46,13 +47,13 @@ export const useProjects = () => {
   const { toast } = useToast();
 
   // Verificar se é ambiente demo ou produção
-  const environment = localStorage.getItem('milapp_environment') || 'demo';
+  const environment = environmentManager.getCurrentEnvironment();
 
   const fetchProjects = async () => {
     try {
       setLoading(true);
       
-      if (environment === 'demo') {
+      if (environmentManager.shouldUseMockData()) {
         // Carregar projetos demo (dados de exemplo)
         const demoProjects = await loadDemoProjects();
         setProjects(demoProjects);
@@ -203,7 +204,7 @@ export const useProjects = () => {
 
   const createProject = async (projectData: ProjectCreate) => {
     try {
-      if (environment === 'demo') {
+      if (environmentManager.shouldUseMockData()) {
         // Em modo demo, simular criação mas não persistir
         const newProject: Project = {
           id: `demo-${Date.now()}`,
@@ -263,7 +264,7 @@ export const useProjects = () => {
         )
       );
 
-      if (environment === 'demo') {
+      if (environmentManager.shouldUseMockData()) {
         // Em modo demo, apenas atualizar estado local
         toast({
           title: "Projeto Demo Atualizado",

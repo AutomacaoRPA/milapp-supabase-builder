@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { MedSeniorLogo } from "@/components/MedSeniorLogo";
+import EnvironmentBadge from "./EnvironmentBadge";
+import EnvironmentSwitcher from "./EnvironmentSwitcher";
 import { 
   Home, 
   MessageSquare, 
@@ -27,14 +29,7 @@ const Navigation = () => {
   const location = useLocation();
   const { signOut, user } = useAuth();
 
-  const switchEnvironment = () => {
-    const currentEnv = localStorage.getItem('milapp_environment') || 'demo';
-    const newEnv = currentEnv === 'demo' ? 'production' : 'demo';
-    localStorage.setItem('milapp_environment', newEnv);
-    
-    // Recarregar a página para aplicar mudanças
-    window.location.reload();
-  };
+  // Removido switchEnvironment - agora usamos EnvironmentSwitcher
 
   const navigationItems = [
     { path: "/", label: "Dashboard", icon: Home },
@@ -61,17 +56,7 @@ const Navigation = () => {
                     MILAPP
                   </span>
                   {/* Indicador de Ambiente */}
-                  {(() => {
-                    const environment = localStorage.getItem('milapp_environment') || 'demo';
-                    return (
-                      <Badge 
-                        variant={environment === 'demo' ? 'secondary' : 'default'} 
-                        className={`text-xs ${environment === 'demo' ? 'bg-accent/20 text-accent' : 'bg-primary/20 text-primary'}`}
-                      >
-                        {environment === 'demo' ? 'DEMO' : 'PROD'}
-                      </Badge>
-                    );
-                  })()}
+                  <EnvironmentBadge />
                 </div>
                 <p className="text-xs text-muted-foreground">Centro de Excelência RPA</p>
               </div>
@@ -115,6 +100,9 @@ const Navigation = () => {
               </div>
             </div>
 
+            {/* Seletor de Ambiente */}
+            <EnvironmentSwitcher />
+
             {/* Notificações */}
             <Button variant="ghost" size="sm" className="relative">
               <Bell className="h-5 w-5" />
@@ -149,11 +137,6 @@ const Navigation = () => {
                 <DropdownMenuItem>
                   <Settings className="h-4 w-4 mr-2" />
                   Configurações
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={switchEnvironment}>
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Trocar Ambiente ({localStorage.getItem('milapp_environment') === 'demo' ? 'para Produção' : 'para Demo'})
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="text-destructive">
