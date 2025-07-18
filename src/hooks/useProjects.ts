@@ -20,6 +20,11 @@ export interface Project {
   product_owner: string | null;
   created_at: string | null;
   updated_at: string | null;
+  // Campos adicionais para funcionalidade completa
+  category?: string | null;
+  expected_impact?: string | null;
+  responsible_name?: string | null;
+  responsible_email?: string | null;
 }
 
 export interface ProjectCreate {

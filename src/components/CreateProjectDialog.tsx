@@ -55,15 +55,24 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
     setIsSubmitting(true);
     try {
       await onCreateProject({
-        ...formData,
-        created_by: "temp-user-id", // Será substituído por auth real
-        start_date: formData.status !== "ideacao" ? new Date().toISOString().split('T')[0] : null,
-        target_date: formData.target_date || null,
+        name: formData.name,
+        description: formData.description || null,
+        status: formData.status as any,
+        priority: formData.priority,
+        methodology: formData.methodology,
+        complexity_score: formData.complexity_score,
         estimated_roi: formData.estimated_roi || null,
+        target_date: formData.target_date || null,
+        created_by: user?.id || "demo-user-id",
+        start_date: formData.status !== "ideacao" ? new Date().toISOString().split('T')[0] : null,
         actual_roi: null,
         completed_date: null,
         assigned_architect: null,
         product_owner: null,
+        category: formData.category || null,
+        expected_impact: formData.expected_impact || null,
+        responsible_name: formData.responsible_name || null,
+        responsible_email: formData.responsible_email || null,
       });
       
       // Reset form mas mantém dados do usuário

@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import ScrumBoard from "@/components/ScrumBoard";
 import ProjectStatusColumns from "@/components/ProjectStatusColumns";
+import ProjectMetrics from "@/components/ProjectMetrics";
 
 const Projetos = () => {
   const navigate = useNavigate();
@@ -65,11 +66,17 @@ const Projetos = () => {
   const statusCounts = {
     total: filteredProjects.length,
     ideacao: filteredProjects.filter(p => p.status === "ideacao").length,
+    qualidade_processos: filteredProjects.filter(p => p.status === "qualidade_processos").length,
     planejamento: filteredProjects.filter(p => p.status === "planejamento").length,
-    desenvolvimento: filteredProjects.filter(p => p.status === "desenvolvimento").length,
-    homologacao: filteredProjects.filter(p => p.status === "homologacao").length,
-    producao: filteredProjects.filter(p => p.status === "producao").length,
-    suspenso: filteredProjects.filter(p => p.status === "suspenso").length,
+    hipotese_formulada: filteredProjects.filter(p => p.status === "hipotese_formulada").length,
+    analise_viabilidade: filteredProjects.filter(p => p.status === "analise_viabilidade").length,
+    prototipo_rapido: filteredProjects.filter(p => p.status === "prototipo_rapido").length,
+    validacao_prototipo: filteredProjects.filter(p => p.status === "validacao_prototipo").length,
+    mvp: filteredProjects.filter(p => p.status === "mvp").length,
+    teste_operacional: filteredProjects.filter(p => p.status === "teste_operacional").length,
+    escala_entrega: filteredProjects.filter(p => p.status === "escala_entrega").length,
+    acompanhamento_pos_entrega: filteredProjects.filter(p => p.status === "acompanhamento_pos_entrega").length,
+    sustentacao_evolucao: filteredProjects.filter(p => p.status === "sustentacao_evolucao").length,
     concluido: filteredProjects.filter(p => p.status === "concluido").length,
   };
 
@@ -284,6 +291,11 @@ const Projetos = () => {
           )}
         </div>
 
+        {/* Métricas Detalhadas do Projeto */}
+        {viewMode === "guide" && (
+          <ProjectMetrics projects={filteredProjects} />
+        )}
+
         {/* Indicadores de Governança - só mostrar nas views de overview */}
         {(viewMode === "kanban" || viewMode === "grid" || viewMode === "columns") && (
           <div className="grid gap-4 md:grid-cols-4">
@@ -295,7 +307,7 @@ const Projetos = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Captação de Ideias</p>
-                    <p className="text-2xl font-bold">{statusCounts.ideacao}</p>
+                    <p className="text-2xl font-bold">{statusCounts.ideacao + statusCounts.qualidade_processos}</p>
                   </div>
                 </div>
               </CardContent>
@@ -308,8 +320,8 @@ const Projetos = () => {
                     <Clock className="h-5 w-5 text-rpa" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Priorização</p>
-                    <p className="text-2xl font-bold">{statusCounts.planejamento}</p>
+                    <p className="text-sm text-muted-foreground">Priorização & Análise</p>
+                    <p className="text-2xl font-bold">{statusCounts.planejamento + statusCounts.hipotese_formulada + statusCounts.analise_viabilidade}</p>
                   </div>
                 </div>
               </CardContent>
@@ -323,7 +335,7 @@ const Projetos = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Em Desenvolvimento</p>
-                    <p className="text-2xl font-bold">{statusCounts.desenvolvimento}</p>
+                    <p className="text-2xl font-bold">{statusCounts.prototipo_rapido + statusCounts.validacao_prototipo + statusCounts.mvp}</p>
                   </div>
                 </div>
               </CardContent>
@@ -337,7 +349,7 @@ const Projetos = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Finalizadas</p>
-                    <p className="text-2xl font-bold">{statusCounts.producao + statusCounts.concluido}</p>
+                    <p className="text-2xl font-bold">{statusCounts.teste_operacional + statusCounts.escala_entrega + statusCounts.acompanhamento_pos_entrega + statusCounts.sustentacao_evolucao + statusCounts.concluido}</p>
                   </div>
                 </div>
               </CardContent>
