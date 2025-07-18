@@ -15,14 +15,43 @@ from .config import settings
 # Configuração de logging estruturado
 logger = logging.getLogger(__name__)
 
+def get_database_config():
+    """Configuração de banco baseada no ambiente"""
+    if settings.ENVIRONMENT == "development":
+        return {
+            "pool_size": 5,
+            "max_overflow": 10,
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,
+        }
+    elif settings.ENVIRONMENT == "production":
+        return {
+            "pool_size": 20,
+            "max_overflow": 30,
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,
+            "pool_timeout": 30,
+        }
+    elif settings.ENVIRONMENT == "test":
+        return {
+            "pool_size": 2,
+            "max_overflow": 5,
+            "pool_pre_ping": True,
+            "pool_recycle": 1800,
+        }
+    else:
+        return {
+            "pool_size": 10,
+            "max_overflow": 20,
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,
+        }
+
 # Configuração otimizada do engine com connection pooling
 engine = create_engine(
     settings.DATABASE_URL,
     poolclass=QueuePool,
-    pool_size=20,  # Número de conexões no pool
-    max_overflow=30,  # Conexões adicionais quando o pool está cheio
-    pool_pre_ping=True,  # Verifica conexões antes de usar
-    pool_recycle=3600,  # Recicla conexões a cada hora
+    **get_database_config(),
     echo=settings.DEBUG,  # Log de queries apenas em debug
     connect_args={
         "check_same_thread": False,
@@ -41,75 +70,84 @@ SessionLocal = sessionmaker(
     expire_on_commit=False  # Evita problemas com objetos expirados
 )
 
+# Base para modelos SQLAlchemy
 Base = declarative_base()
 
-# Middleware para logging de queries lentas
+# Event listeners para logging e monitoramento
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    """Configurar pragmas para SQLite"""
+    if "sqlite" in str(dbapi_connection):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.execute("PRAGMA cache_size=10000")
+        cursor.execute("PRAGMA temp_store=MEMORY")
+        cursor.close()
+
 @event.listens_for(engine, "before_cursor_execute")
 def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    context._query_start_time = time.time()
+    """Log de queries lentas"""
+    conn.info.setdefault('query_start_time', []).append(time.time())
 
 @event.listens_for(engine, "after_cursor_execute")
 def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
-    total = time.time() - context._query_start_time
+    """Log de queries lentas"""
+    total = time.time() - conn.info['query_start_time'].pop(-1)
     if total > 1.0:  # Log queries que demoram mais de 1 segundo
-        logger.warning(
-            "Query lenta detectada",
-            extra={
-                "query_time": total,
-                "statement": statement[:200] + "..." if len(statement) > 200 else statement,
-                "parameters": str(parameters)[:100] if parameters else None
-            }
-        )
+        logger.warning(f"Slow query detected: {total:.2f}s - {statement[:100]}...")
 
 def get_db() -> Generator[Session, None, None]:
-    """
-    Dependency para obter sessão do banco de dados com retry automático
-    """
+    """Dependency para obter sessão do banco de dados"""
     db = SessionLocal()
     try:
         yield db
     except Exception as e:
-        logger.error(f"Erro na sessão do banco: {e}")
+        logger.error(f"Database error: {str(e)}")
         db.rollback()
         raise
     finally:
         db.close()
 
 @contextmanager
-def get_db_context() -> Generator[Session, None, None]:
-    """
-    Context manager para sessões do banco de dados
-    """
+def get_db_context():
+    """Context manager para sessão do banco de dados"""
     db = SessionLocal()
     try:
         yield db
         db.commit()
     except Exception as e:
-        logger.error(f"Erro na sessão do banco: {e}")
+        logger.error(f"Database error: {str(e)}")
         db.rollback()
         raise
     finally:
         db.close()
 
-def init_db():
-    """
-    Inicializa o banco de dados criando todas as tabelas
-    """
+async def init_db():
+    """Inicializar banco de dados"""
     try:
+        # Criar todas as tabelas
         Base.metadata.create_all(bind=engine)
-        logger.info("Banco de dados inicializado com sucesso")
+        logger.info("Database initialized successfully")
     except Exception as e:
-        logger.error(f"Erro ao inicializar banco de dados: {e}")
+        logger.error(f"Database initialization failed: {str(e)}")
         raise
 
-def check_db_connection() -> bool:
-    """
-    Verifica se a conexão com o banco está funcionando
-    """
+async def check_db_connection():
+    """Verificar conexão com banco de dados"""
     try:
-        with engine.connect() as conn:
-            conn.execute("SELECT 1")
+        with engine.connect() as connection:
+            connection.execute("SELECT 1")
         return True
     except Exception as e:
-        logger.error(f"Erro na conexão com banco de dados: {e}")
-        return False 
+        logger.error(f"Database connection check failed: {str(e)}")
+        return False
+
+def get_connection_count():
+    """Obter número de conexões ativas"""
+    try:
+        return engine.pool.size()
+    except Exception as e:
+        logger.error(f"Error getting connection count: {str(e)}")
+        return 0 

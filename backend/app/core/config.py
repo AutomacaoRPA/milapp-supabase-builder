@@ -77,12 +77,23 @@ class Settings(BaseSettings):
         "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
     }
     
+    # Allowed Hosts for TrustedHostMiddleware
+    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "0.0.0.0"]
+    
     @validator('SECRET_KEY')
     def validate_secret_key(cls, v):
         if not v or v == "your-secret-key-here":
             raise ValueError("SECRET_KEY deve ser configurada e ter pelo menos 32 caracteres")
         if len(v) < 32:
             raise ValueError("SECRET_KEY deve ter pelo menos 32 caracteres")
+        if not any(c.isupper() for c in v):
+            raise ValueError("SECRET_KEY deve conter pelo menos uma letra maiúscula")
+        if not any(c.islower() for c in v):
+            raise ValueError("SECRET_KEY deve conter pelo menos uma letra minúscula")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("SECRET_KEY deve conter pelo menos um número")
+        if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in v):
+            raise ValueError("SECRET_KEY deve conter pelo menos um caractere especial")
         return v
     
     @validator('SUPABASE_URL')
@@ -95,6 +106,13 @@ class Settings(BaseSettings):
     def validate_cors_origins(cls, v):
         if not v:
             raise ValueError("CORS_ORIGINS não pode estar vazio")
+        return v
+    
+    @validator('ENVIRONMENT')
+    def validate_environment(cls, v):
+        allowed_environments = ['development', 'staging', 'production', 'test']
+        if v not in allowed_environments:
+            raise ValueError(f"ENVIRONMENT deve ser um dos: {allowed_environments}")
         return v
     
     class Config:
