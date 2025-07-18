@@ -20,6 +20,7 @@ from app.core.security import get_current_user
 from app.api.v1.router import api_router
 from app.services.ai_service import AIService
 from app.services.notification_service import NotificationService
+from app.services.monitoring_service import monitoring_service
 
 # Configuração de logging
 logger = structlog.get_logger()
@@ -42,12 +43,16 @@ async def lifespan(app: FastAPI):
     await AIService.initialize()
     await NotificationService.initialize()
     
+    # Iniciar monitoramento
+    monitoring_service.start_monitoring()
+    
     logger.info("MILAPP Backend iniciado com sucesso")
     
     yield
     
     # Shutdown
     logger.info("Encerrando MILAPP Backend")
+    monitoring_service.stop_monitoring()
     await AIService.cleanup()
     await NotificationService.cleanup()
 

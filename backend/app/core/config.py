@@ -3,8 +3,10 @@ Configurações do MILAPP Backend
 """
 
 import os
+import secrets
 from typing import List, Optional
 from pydantic_settings import BaseSettings
+from pydantic import validator
 
 
 class Settings(BaseSettings):
@@ -19,10 +21,15 @@ class Settings(BaseSettings):
     # Redis Configuration
     REDIS_URL: str = "redis://localhost:6379/0"
     
-    # Security
-    SECRET_KEY: str = "your-secret-key-here"
+    # Security - VALIDAÇÃO FORTE
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    
+    # Rate Limiting
+    RATE_LIMIT_PER_MINUTE: int = 60
+    RATE_LIMIT_PER_HOUR: int = 1000
     
     # Azure AD Configuration
     AZURE_TENANT_ID: Optional[str] = None
@@ -55,27 +62,46 @@ class Settings(BaseSettings):
     GRAFANA_URL: Optional[str] = None
     
     # CORS
-    CORS_ORIGINS: list = ["http://localhost:3000", "http://localhost:3001"]
+    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001"]
     
     # Environment
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     
+    # Security Headers
+    SECURITY_HEADERS: dict = {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block",
+        "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    }
+    
+    @validator('SECRET_KEY')
+    def validate_secret_key(cls, v):
+        if not v or v == "your-secret-key-here":
+            raise ValueError("SECRET_KEY deve ser configurada e ter pelo menos 32 caracteres")
+        if len(v) < 32:
+            raise ValueError("SECRET_KEY deve ter pelo menos 32 caracteres")
+        return v
+    
+    @validator('SUPABASE_URL')
+    def validate_supabase_url(cls, v):
+        if not v or not v.startswith('https://'):
+            raise ValueError("SUPABASE_URL deve ser uma URL HTTPS válida")
+        return v
+    
+    @validator('CORS_ORIGINS')
+    def validate_cors_origins(cls, v):
+        if not v:
+            raise ValueError("CORS_ORIGINS não pode estar vazio")
+        return v
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
 
-    @property
-    def database_url(self) -> str:
-        """Get database URL from Supabase or direct DATABASE_URL"""
-        if self.DATABASE_URL:
-            return self.DATABASE_URL
-        
-        # Construct Supabase PostgreSQL URL
-        # Extract host from SUPABASE_URL
-        supabase_host = self.SUPABASE_URL.replace("https://", "").replace("http://", "")
-        return f"postgresql://postgres:[YOUR-PASSWORD]@{supabase_host}:5432/postgres"
-
+# Instância global das configurações
 settings = Settings()
 
 

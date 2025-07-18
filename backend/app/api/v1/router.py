@@ -13,7 +13,8 @@ from app.api.v1.endpoints import (
     deployments,
     dashboards,
     tasks,
-    sprints
+    sprints,
+    monitoring
 )
 
 # Criar router principal
@@ -71,4 +72,11 @@ api_router.include_router(
 api_router.include_router(
     sprints.router,
     tags=["Sprints"]
+)
+
+# Endpoints de monitoramento e health check
+api_router.include_router(
+    monitoring.router,
+    prefix="/monitoring",
+    tags=["Monitoring"]
 ) 

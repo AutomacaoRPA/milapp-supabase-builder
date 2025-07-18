@@ -3,15 +3,21 @@ Sistema de segurança do MILAPP
 """
 
 import os
+import hashlib
+import time
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import Optional, Union, Dict, Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.base import BaseHTTPMiddleware
 import structlog
+import redis.asyncio as redis
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.database import get_db
 
 logger = structlog.get_logger()
 
@@ -20,6 +26,17 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Configuração do JWT
 security = HTTPBearer()
+
+# Cliente Redis para rate limiting
+redis_client: Optional[redis.Redis] = None
+
+
+async def get_redis_client() -> redis.Redis:
+    """Obter cliente Redis"""
+    global redis_client
+    if redis_client is None:
+        redis_client = redis.from_url(settings.REDIS_URL)
+    return redis_client
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -33,31 +50,21 @@ def get_password_hash(password: str) -> str:
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Criar token de acesso JWT"""
+    """Criar token de acesso"""
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode.update({"exp": expire, "type": "access"})
-    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-    return encoded_jwt
-
-
-def create_refresh_token(data: dict) -> str:
-    """Criar token de refresh JWT"""
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
-    to_encode.update({"exp": expire, "type": "refresh"})
-    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
 
 def verify_token(token: str) -> Optional[dict]:
     """Verificar token JWT"""
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
     except JWTError:
         return None
@@ -83,8 +90,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # Aqui você buscaria o usuário no banco de dados
-    # Por enquanto, retornamos um usuário mock
+    # Buscar usuário no banco de dados
     from app.models.user import User
     user = await User.get_by_id(user_id)
     
@@ -98,14 +104,156 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return user
 
 
-async def get_current_active_user(current_user = Depends(get_current_user)):
-    """Obter usuário ativo atual"""
-    if not current_user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Usuário inativo"
-        )
-    return current_user
+class SecurityMiddleware(BaseHTTPMiddleware):
+    """Middleware de segurança"""
+    
+    async def dispatch(self, request: Request, call_next):
+        # Adicionar headers de segurança
+        response = await call_next(request)
+        
+        # Headers de segurança
+        for header, value in settings.SECURITY_HEADERS.items():
+            response.headers[header] = value
+        
+        # Log de auditoria
+        await self._log_audit(request, response)
+        
+        return response
+    
+    async def _log_audit(self, request: Request, response: Response):
+        """Log de auditoria"""
+        try:
+            audit_data = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "ip_address": request.client.host if request.client else None,
+                "user_agent": request.headers.get("user-agent"),
+                "content_length": response.headers.get("content-length"),
+            }
+            
+            logger.info("Audit log", **audit_data)
+            
+        except Exception as e:
+            logger.error("Erro no log de auditoria", error=str(e))
+
+
+class RateLimiter:
+    """Sistema de rate limiting"""
+    
+    def __init__(self):
+        self.redis_client = None
+    
+    async def check_rate_limit(self, user_id: str, endpoint: str) -> bool:
+        """Verificar rate limit para usuário e endpoint"""
+        try:
+            if not self.redis_client:
+                self.redis_client = await get_redis_client()
+            
+            # Chave para rate limiting
+            minute_key = f"rate_limit:{user_id}:{endpoint}:minute"
+            hour_key = f"rate_limit:{user_id}:{endpoint}:hour"
+            
+            current_time = int(time.time())
+            
+            # Verificar limite por minuto
+            minute_count = await self.redis_client.get(minute_key)
+            if minute_count and int(minute_count) >= settings.RATE_LIMIT_PER_MINUTE:
+                return False
+            
+            # Verificar limite por hora
+            hour_count = await self.redis_client.get(hour_key)
+            if hour_count and int(hour_count) >= settings.RATE_LIMIT_PER_HOUR:
+                return False
+            
+            # Incrementar contadores
+            pipe = self.redis_client.pipeline()
+            pipe.incr(minute_key)
+            pipe.expire(minute_key, 60)  # Expira em 1 minuto
+            pipe.incr(hour_key)
+            pipe.expire(hour_key, 3600)  # Expira em 1 hora
+            await pipe.execute()
+            
+            return True
+            
+        except Exception as e:
+            logger.error("Rate limiting check failed", error=str(e))
+            return True  # Em caso de erro, permitir acesso
+
+
+# Instância global do rate limiter
+rate_limiter = RateLimiter()
+
+
+async def check_rate_limit_middleware(request: Request):
+    """Middleware para verificar rate limit"""
+    try:
+        # Extrair user_id do token se disponível
+        user_id = "anonymous"
+        auth_header = request.headers.get("authorization")
+        
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
+            payload = verify_token(token)
+            if payload:
+                user_id = payload.get("sub", "anonymous")
+        
+        # Verificar rate limit
+        endpoint = request.url.path
+        allowed = await rate_limiter.check_rate_limit(user_id, endpoint)
+        
+        if not allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Rate limit excedido. Tente novamente em alguns minutos."
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Erro no rate limiting", error=str(e))
+
+
+def sanitize_input(data: Any) -> Any:
+    """Sanitizar entrada do usuário"""
+    if isinstance(data, str):
+        # Remover caracteres perigosos
+        dangerous_chars = ['<', '>', '"', "'", '&', 'script', 'javascript']
+        for char in dangerous_chars:
+            data = data.replace(char, '')
+        return data.strip()
+    elif isinstance(data, dict):
+        return {k: sanitize_input(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_input(item) for item in data]
+    else:
+        return data
+
+
+def validate_file_upload(filename: str, content_type: str, max_size: int = 10 * 1024 * 1024) -> bool:
+    """Validar upload de arquivo"""
+    # Verificar extensão
+    allowed_extensions = ['.pdf', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg']
+    file_ext = os.path.splitext(filename)[1].lower()
+    
+    if file_ext not in allowed_extensions:
+        return False
+    
+    # Verificar content type
+    allowed_types = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'image/png',
+        'image/jpeg'
+    ]
+    
+    if content_type not in allowed_types:
+        return False
+    
+    return True
 
 
 # Azure AD Integration
@@ -143,165 +291,6 @@ class AzureADAuth:
         except Exception as e:
             logger.error("Azure AD token validation failed", error=str(e))
             return None
-    
-    async def get_user_info_from_azure(self, access_token: str) -> Optional[dict]:
-        """Obter informações do usuário do Azure AD"""
-        try:
-            import httpx
-            
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json"
-            }
-            
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    "https://graph.microsoft.com/v1.0/me",
-                    headers=headers
-                )
-                
-                if response.status_code == 200:
-                    return response.json()
-                else:
-                    logger.error("Failed to get user info from Azure AD", status_code=response.status_code)
-                    return None
-                    
-        except Exception as e:
-            logger.error("Azure AD user info request failed", error=str(e))
-            return None
-
-
-# Rate Limiting
-class RateLimiter:
-    """Sistema de rate limiting"""
-    
-    def __init__(self):
-        self.redis_client = None  # Será inicializado com Redis
-    
-    async def check_rate_limit(self, user_id: str, endpoint: str) -> bool:
-        """Verificar rate limit para usuário e endpoint"""
-        try:
-            import redis
-            from datetime import datetime
-            
-            if not self.redis_client:
-                self.redis_client = redis.Redis.from_url(settings.REDIS_URL)
-            
-            # Chave para rate limiting
-            minute_key = f"rate_limit:{user_id}:{endpoint}:minute"
-            hour_key = f"rate_limit:{user_id}:{endpoint}:hour"
-            
-            current_time = datetime.now()
-            
-            # Verificar limite por minuto
-            minute_count = self.redis_client.get(minute_key)
-            if minute_count and int(minute_count) >= settings.RATE_LIMIT_PER_MINUTE:
-                return False
-            
-            # Verificar limite por hora
-            hour_count = self.redis_client.get(hour_key)
-            if hour_count and int(hour_count) >= settings.RATE_LIMIT_PER_HOUR:
-                return False
-            
-            # Incrementar contadores
-            pipe = self.redis_client.pipeline()
-            pipe.incr(minute_key)
-            pipe.expire(minute_key, 60)  # Expira em 1 minuto
-            pipe.incr(hour_key)
-            pipe.expire(hour_key, 3600)  # Expira em 1 hora
-            pipe.execute()
-            
-            return True
-            
-        except Exception as e:
-            logger.error("Rate limiting check failed", error=str(e))
-            return True  # Em caso de erro, permitir acesso
-
-
-# Auditoria
-class AuditLogger:
-    """Sistema de auditoria"""
-    
-    @staticmethod
-    async def log_action(
-        user_id: str,
-        action: str,
-        resource_type: str = None,
-        resource_id: str = None,
-        details: dict = None,
-        ip_address: str = None
-    ):
-        """Registrar ação de auditoria"""
-        try:
-            from app.models.audit_log import AuditLog
-            
-            audit_log = AuditLog(
-                user_id=user_id,
-                action=action,
-                resource_type=resource_type,
-                resource_id=resource_id,
-                details=details or {},
-                ip_address=ip_address,
-                timestamp=datetime.utcnow()
-            )
-            
-            # Salvar no banco de dados
-            # await audit_log.save()
-            
-            logger.info(
-                "Audit log",
-                user_id=user_id,
-                action=action,
-                resource_type=resource_type,
-                resource_id=resource_id,
-                ip_address=ip_address
-            )
-            
-        except Exception as e:
-            logger.error("Audit logging failed", error=str(e))
-
-
-# Criptografia de dados sensíveis
-class DataEncryption:
-    """Criptografia de dados sensíveis"""
-    
-    def __init__(self):
-        from cryptography.fernet import Fernet
-        self.cipher_suite = Fernet(settings.ENCRYPTION_KEY.encode())
-    
-    def encrypt_data(self, data: str) -> str:
-        """Criptografar dados"""
-        try:
-            encrypted_data = self.cipher_suite.encrypt(data.encode())
-            return encrypted_data.decode()
-        except Exception as e:
-            logger.error("Data encryption failed", error=str(e))
-            return data
-    
-    def decrypt_data(self, encrypted_data: str) -> str:
-        """Descriptografar dados"""
-        try:
-            decrypted_data = self.cipher_suite.decrypt(encrypted_data.encode())
-            return decrypted_data.decode()
-        except Exception as e:
-            logger.error("Data decryption failed", error=str(e))
-            return encrypted_data
-
-
-# Middleware de segurança
-async def security_middleware(request, call_next):
-    """Middleware de segurança"""
-    # Verificar headers de segurança
-    response = await call_next(request)
-    
-    # Adicionar headers de segurança
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
-    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-    response.headers["Content-Security-Policy"] = "default-src 'self'"
-    
-    return response
 
 
 # Função para verificar permissões
@@ -309,8 +298,24 @@ async def check_permission(user, resource_type: str, action: str) -> bool:
     """Verificar se usuário tem permissão para ação"""
     try:
         # Implementar lógica de verificação de permissões
-        # Por enquanto, retornar True para usuários autenticados
-        return user is not None
+        if user.role == "admin":
+            return True
+        
+        # Verificar permissões específicas
+        permissions = {
+            "projects": ["read", "write", "delete"],
+            "conversations": ["read", "write"],
+            "documents": ["read", "write"],
+            "quality_gates": ["read", "approve"],
+            "deployments": ["read", "deploy"],
+            "dashboards": ["read"]
+        }
+        
+        if resource_type in permissions and action in permissions[resource_type]:
+            return True
+        
+        return False
+        
     except Exception as e:
         logger.error("Permission check failed", error=str(e))
         return False
