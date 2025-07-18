@@ -18,13 +18,23 @@ import {
   Bell,
   Search,
   LogOut,
-  User
+  User,
+  RefreshCw
 } from "lucide-react";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { signOut, user } = useAuth();
+
+  const switchEnvironment = () => {
+    const currentEnv = localStorage.getItem('milapp_environment') || 'demo';
+    const newEnv = currentEnv === 'demo' ? 'production' : 'demo';
+    localStorage.setItem('milapp_environment', newEnv);
+    
+    // Recarregar a página para aplicar mudanças
+    window.location.reload();
+  };
 
   const navigationItems = [
     { path: "/", label: "Dashboard", icon: Home },
@@ -46,9 +56,23 @@ const Navigation = () => {
             <Link to="/" className="flex items-center space-x-3">
               <MedSeniorLogo size="sm" showTagline={false} />
               <div className="hidden sm:block border-l border-border pl-3">
-                <span className="text-lg font-heading font-bold text-primary">
-                  MILAPP
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-heading font-bold text-primary">
+                    MILAPP
+                  </span>
+                  {/* Indicador de Ambiente */}
+                  {(() => {
+                    const environment = localStorage.getItem('milapp_environment') || 'demo';
+                    return (
+                      <Badge 
+                        variant={environment === 'demo' ? 'secondary' : 'default'} 
+                        className={`text-xs ${environment === 'demo' ? 'bg-accent/20 text-accent' : 'bg-primary/20 text-primary'}`}
+                      >
+                        {environment === 'demo' ? 'DEMO' : 'PROD'}
+                      </Badge>
+                    );
+                  })()}
+                </div>
                 <p className="text-xs text-muted-foreground">Centro de Excelência RPA</p>
               </div>
             </Link>
@@ -125,6 +149,11 @@ const Navigation = () => {
                 <DropdownMenuItem>
                   <Settings className="h-4 w-4 mr-2" />
                   Configurações
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={switchEnvironment}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Trocar Ambiente ({localStorage.getItem('milapp_environment') === 'demo' ? 'para Produção' : 'para Demo'})
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()} className="text-destructive">

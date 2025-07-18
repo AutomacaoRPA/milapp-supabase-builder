@@ -90,23 +90,79 @@ const Index = () => {
             Plataforma completa para descoberta, desenvolvimento e deploy de automações RPA com governança avançada e foco no bem-estar organizacional
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              size="lg" 
-              variant="brand"
-              onClick={() => navigate('/auth')}
-            >
-              <LogIn className="h-5 w-5 mr-2" />
-              Entrar no Sistema
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
+          {/* Seleção de Ambiente */}
+          <div className="space-y-6">
+            <h2 className="text-2xl font-heading font-semibold text-foreground">
+              Escolha seu Ambiente
+            </h2>
             
-            <Button size="lg" variant="outline" asChild>
-              <Link to="/projetos">
-                <Target className="h-5 w-5 mr-2" />
-                Ver Demo
-              </Link>
-            </Button>
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Ambiente Demo */}
+              <Card className="group hover:shadow-primary transition-all duration-300 hover-scale cursor-pointer border-2 hover:border-primary/40">
+                <CardContent className="p-8 text-center space-y-4">
+                  <div className="h-16 w-16 mx-auto rounded-full bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                    <Target className="h-8 w-8 text-accent" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-heading font-bold mb-2">Ambiente Demo</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Explore todas as funcionalidades com dados de exemplo e projetos pré-configurados
+                    </p>
+                    <ul className="text-sm text-muted-foreground space-y-1 mb-6">
+                      <li>✓ Projetos de exemplo</li>
+                      <li>✓ Dados de demonstração</li>
+                      <li>✓ Todas as funcionalidades ativas</li>
+                      <li>✓ Ideal para testes e treinamento</li>
+                    </ul>
+                  </div>
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      localStorage.setItem('milapp_environment', 'demo');
+                      navigate('/auth');
+                    }}
+                  >
+                    <Play className="h-5 w-5 mr-2" />
+                    Acessar Demo
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Ambiente Produção */}
+              <Card className="group hover:shadow-primary transition-all duration-300 hover-scale cursor-pointer border-2 hover:border-primary/40">
+                <CardContent className="p-8 text-center space-y-4">
+                  <div className="h-16 w-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <Shield className="h-8 w-8 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-heading font-bold mb-2">Ambiente Produção</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Ambiente limpo e seguro para seus projetos reais de automação RPA
+                    </p>
+                    <ul className="text-sm text-muted-foreground space-y-1 mb-6">
+                      <li>✓ Ambiente limpo</li>
+                      <li>✓ Dados reais</li>
+                      <li>✓ Governança completa</li>
+                      <li>✓ Pronto para produção</li>
+                    </ul>
+                  </div>
+                  <Button 
+                    size="lg" 
+                    variant="brand"
+                    className="w-full"
+                    onClick={() => {
+                      localStorage.setItem('milapp_environment', 'production');
+                      navigate('/auth');
+                    }}
+                  >
+                    <LogIn className="h-5 w-5 mr-2" />
+                    Acessar Produção
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
 
@@ -179,6 +235,86 @@ const Index = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Informações dos Ambientes */}
+        <div className="mt-16 space-y-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-heading font-bold text-foreground mb-4">
+              Compreenda os Ambientes
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              O MILAPP oferece dois ambientes distintos para atender diferentes necessidades de uso
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Ambiente Demo */}
+            <Card className="border-accent/20">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
+                    <Target className="h-5 w-5 text-accent" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Ambiente Demo</h3>
+                </div>
+                
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p><strong>Ideal para:</strong></p>
+                  <ul className="space-y-1 ml-4">
+                    <li>• Conhecer todas as funcionalidades</li>
+                    <li>• Treinamento de equipes</li>
+                    <li>• Apresentações para stakeholders</li>
+                    <li>• Testes de conceito</li>
+                  </ul>
+                  
+                  <p><strong>Características:</strong></p>
+                  <ul className="space-y-1 ml-4">
+                    <li>• 5 projetos de exemplo pré-criados</li>
+                    <li>• Dados simulados realistas</li>
+                    <li>• Todas as funcionalidades ativas</li>
+                    <li>• Mudanças não são persistidas</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Ambiente Produção */}
+            <Card className="border-primary/20">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Shield className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold">Ambiente Produção</h3>
+                </div>
+                
+                <div className="space-y-3 text-sm text-muted-foreground">
+                  <p><strong>Ideal para:</strong></p>
+                  <ul className="space-y-1 ml-4">
+                    <li>• Gestão real de projetos RPA</li>
+                    <li>• Controle de pipeline de inovação</li>
+                    <li>• Governança corporativa</li>
+                    <li>• Métricas e ROI reais</li>
+                  </ul>
+                  
+                  <p><strong>Características:</strong></p>
+                  <ul className="space-y-1 ml-4">
+                    <li>• Base de dados limpa</li>
+                    <li>• Persistência garantida</li>
+                    <li>• Auditoria completa</li>
+                    <li>• Pronto para uso corporativo</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              💡 <strong>Dica:</strong> Você pode alternar entre os ambientes a qualquer momento através do menu de perfil
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
