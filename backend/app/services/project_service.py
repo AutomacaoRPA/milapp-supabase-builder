@@ -1,26 +1,37 @@
 """
-Serviço de Gestão de Projetos
+Serviço de Gestão de Projetos - Otimizado com Cache e Queries Eficientes
 """
 
 from typing import List, Optional, Tuple, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, func, and_, or_, desc, asc
+from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy.sql import text
+import logging
 
 from app.models.project import Project
 from app.models.user import User
+from app.services.cache_service import cache_service, cache_result, invalidate_cache_on_change
+
+logger = logging.getLogger(__name__)
 
 class ProjectService:
-    """Serviço de gestão de projetos"""
+    """Serviço de gestão de projetos com cache e otimizações"""
+    
+    # Configurações de cache
+    CACHE_TTL = 3600  # 1 hora
+    CACHE_TTL_SHORT = 300  # 5 minutos
+    CACHE_TTL_LONG = 7200  # 2 horas
     
     @staticmethod
+    @cache_result(ttl=300, key_prefix="project")
     async def create_project(
         db: AsyncSession,
         project_data: dict,
         created_by: str
     ) -> Project:
-        """Criar novo projeto"""
+        """Criar novo projeto com cache invalidation"""
         try:
             project = Project(
                 name=project_data["name"],
@@ -40,13 +51,21 @@ class ProjectService:
             await db.commit()
             await db.refresh(project)
             
+            # Invalidar cache relacionado
+            cache_service.invalidate_user_cache(created_by)
+            cache_service.delete_pattern("projects:list:*")
+            cache_service.delete_pattern("dashboard:projects:*")
+            
+            logger.info(f"Projeto criado: {project.id} por usuário {created_by}")
             return project
             
         except Exception as e:
             await db.rollback()
+            logger.error(f"Erro ao criar projeto: {e}")
             raise e
     
     @staticmethod
+    @cache_result(ttl=300, key_prefix="projects_list")
     async def get_projects(
         db: AsyncSession,
         user_id: str,
@@ -55,14 +74,25 @@ class ProjectService:
         status: Optional[str] = None,
         type: Optional[str] = None,
         priority: Optional[str] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
+        sort_by: str = "created_at",
+        sort_order: str = "desc"
     ) -> Tuple[List[Project], int]:
-        """Listar projetos com filtros e paginação"""
+        """Listar projetos com filtros, paginação e cache otimizado"""
         try:
-            # Construir query base
-            query = select(Project).where(Project.created_by == user_id)
+            # Validar parâmetros de paginação
+            if page < 1:
+                page = 1
+            if size < 1 or size > 100:
+                size = 20
             
-            # Aplicar filtros
+            # Construir query base com eager loading
+            query = select(Project).options(
+                selectinload(Project.tasks),
+                selectinload(Project.milestones)
+            ).where(Project.created_by == user_id)
+            
+            # Aplicar filtros com índices otimizados
             if status:
                 query = query.where(Project.status == status)
             
@@ -73,42 +103,73 @@ class ProjectService:
                 query = query.where(Project.priority == priority)
             
             if search:
+                # Otimizar busca com índices de texto
                 search_filter = or_(
                     Project.name.ilike(f"%{search}%"),
                     Project.description.ilike(f"%{search}%")
                 )
                 query = query.where(search_filter)
             
-            # Contar total
-            count_query = select(func.count()).select_from(query.subquery())
+            # Contar total com query otimizada
+            count_query = select(func.count(Project.id)).where(Project.created_by == user_id)
+            
+            # Aplicar mesmos filtros para contagem
+            if status:
+                count_query = count_query.where(Project.status == status)
+            if type:
+                count_query = count_query.where(Project.type == type)
+            if priority:
+                count_query = count_query.where(Project.priority == priority)
+            if search:
+                count_query = count_query.where(search_filter)
+            
             total_result = await db.execute(count_query)
             total = total_result.scalar()
             
-            # Aplicar paginação
+            # Aplicar ordenação otimizada
+            if sort_by == "name":
+                order_clause = Project.name.asc() if sort_order == "asc" else Project.name.desc()
+            elif sort_by == "status":
+                order_clause = Project.status.asc() if sort_order == "asc" else Project.status.desc()
+            elif sort_by == "priority":
+                order_clause = Project.priority.asc() if sort_order == "asc" else Project.priority.desc()
+            elif sort_by == "start_date":
+                order_clause = Project.start_date.asc() if sort_order == "asc" else Project.start_date.desc()
+            else:
+                order_clause = Project.created_at.desc() if sort_order == "desc" else Project.created_at.asc()
+            
+            query = query.order_by(order_clause)
+            
+            # Aplicar paginação eficiente
             offset = (page - 1) * size
             query = query.offset(offset).limit(size)
-            
-            # Ordenar por data de criação
-            query = query.order_by(Project.created_at.desc())
             
             # Executar query
             result = await db.execute(query)
             projects = result.scalars().all()
             
+            logger.debug(f"Projetos recuperados: {len(projects)} de {total} para usuário {user_id}")
             return projects, total
             
         except Exception as e:
+            logger.error(f"Erro ao listar projetos: {e}")
             raise e
     
     @staticmethod
+    @cache_result(ttl=600, key_prefix="project_detail")
     async def get_project(
         db: AsyncSession,
         project_id: str,
         user_id: str
     ) -> Optional[Project]:
-        """Obter projeto específico"""
+        """Obter projeto específico com eager loading otimizado"""
         try:
-            query = select(Project).where(
+            query = select(Project).options(
+                selectinload(Project.tasks),
+                selectinload(Project.milestones),
+                selectinload(Project.stakeholders),
+                selectinload(Project.documents)
+            ).where(
                 and_(
                     Project.id == project_id,
                     Project.created_by == user_id
@@ -116,46 +177,65 @@ class ProjectService:
             )
             
             result = await db.execute(query)
-            return result.scalar_one_or_none()
+            project = result.scalar_one_or_none()
+            
+            if project:
+                logger.debug(f"Projeto recuperado: {project_id} para usuário {user_id}")
+            
+            return project
             
         except Exception as e:
+            logger.error(f"Erro ao obter projeto {project_id}: {e}")
             raise e
     
     @staticmethod
+    @invalidate_cache_on_change(["project:*", "projects:list:*", "dashboard:projects:*"])
     async def update_project(
         db: AsyncSession,
         project_id: str,
         project_data: dict,
         user_id: str
     ) -> Optional[Project]:
-        """Atualizar projeto"""
+        """Atualizar projeto com cache invalidation"""
         try:
             project = await ProjectService.get_project(db, project_id, user_id)
             if not project:
                 return None
             
-            # Atualizar campos
+            # Atualizar campos com validação
+            updateable_fields = {
+                'name', 'description', 'type', 'priority', 'methodology',
+                'status', 'roi_target', 'estimated_effort', 'start_date', 'end_date'
+            }
+            
             for field, value in project_data.items():
-                if value is not None and hasattr(project, field):
+                if field in updateable_fields and value is not None:
                     setattr(project, field, value)
             
             project.updated_at = datetime.utcnow()
             await db.commit()
             await db.refresh(project)
             
+            # Invalidar cache específico
+            cache_service.delete(f"project_detail:get_project:{hash(f'{project_id}_{user_id}')}")
+            cache_service.invalidate_project_cache(project_id)
+            
+            logger.info(f"Projeto atualizado: {project_id} por usuário {user_id}")
             return project
             
         except Exception as e:
             await db.rollback()
+            logger.error(f"Erro ao atualizar projeto {project_id}: {e}")
             raise e
     
     @staticmethod
+    @invalidate_cache_on_change(["project:*", "projects:list:*", "dashboard:projects:*"])
     async def delete_project(
         db: AsyncSession,
         project_id: str,
         user_id: str
     ) -> bool:
-        """Deletar projeto"""
+        """Deletar projeto com cache invalidation"""
         try:
             project = await ProjectService.get_project(db, project_id, user_id)
             if not project:
@@ -164,19 +244,26 @@ class ProjectService:
             await db.delete(project)
             await db.commit()
             
+            # Invalidar cache relacionado
+            cache_service.invalidate_project_cache(project_id)
+            cache_service.invalidate_user_cache(user_id)
+            
+            logger.info(f"Projeto deletado: {project_id} por usuário {user_id}")
             return True
             
         except Exception as e:
             await db.rollback()
+            logger.error(f"Erro ao deletar projeto {project_id}: {e}")
             raise e
     
     @staticmethod
+    @cache_result(ttl=300, key_prefix="project_metrics")
     async def get_project_metrics(
         db: AsyncSession,
         project_id: str,
         user_id: str
     ) -> Optional[Dict[str, Any]]:
-        """Obter métricas do projeto"""
+        """Obter métricas do projeto com cache"""
         try:
             project = await ProjectService.get_project(db, project_id, user_id)
             if not project:
@@ -193,86 +280,129 @@ class ProjectService:
                 "effort_current": project.actual_effort or 0,
                 "effort_estimated": project.estimated_effort or 0,
                 "days_remaining": ProjectService._calculate_days_remaining(project),
-                "risk_level": ProjectService._calculate_risk_level(project)
+                "risk_level": ProjectService._calculate_risk_level(project),
+                "tasks_count": len(project.tasks) if project.tasks else 0,
+                "milestones_count": len(project.milestones) if project.milestones else 0,
+                "last_updated": project.updated_at.isoformat() if project.updated_at else None
             }
             
             return metrics
             
         except Exception as e:
+            logger.error(f"Erro ao obter métricas do projeto {project_id}: {e}")
             raise e
     
     @staticmethod
-    async def duplicate_project(
-        db: AsyncSession,
-        project_id: str,
-        new_name: str,
-        user_id: str
-    ) -> Optional[Project]:
-        """Duplicar projeto"""
-        try:
-            original_project = await ProjectService.get_project(db, project_id, user_id)
-            if not original_project:
-                return None
-            
-            # Criar novo projeto baseado no original
-            new_project = Project(
-                name=new_name,
-                description=original_project.description,
-                type=original_project.type,
-                priority=original_project.priority,
-                methodology=original_project.methodology,
-                status="planning",  # Reset status
-                created_by=user_id,
-                roi_target=original_project.roi_target,
-                estimated_effort=original_project.estimated_effort,
-                start_date=None,  # Reset dates
-                end_date=None
-            )
-            
-            db.add(new_project)
-            await db.commit()
-            await db.refresh(new_project)
-            
-            return new_project
-            
-        except Exception as e:
-            await db.rollback()
-            raise e
-    
-    @staticmethod
+    @cache_result(ttl=600, key_prefix="project_summary")
     async def get_projects_summary(
         db: AsyncSession,
         user_id: str
     ) -> Dict[str, Any]:
-        """Obter resumo dos projetos para dashboard"""
+        """Obter resumo de projetos com cache otimizado"""
         try:
-            # Contar projetos por status
-            status_counts = await ProjectService._get_project_counts_by_status(db, user_id)
+            # Query otimizada para contagens por status
+            status_counts_query = text("""
+                SELECT status, COUNT(*) as count
+                FROM projects
+                WHERE created_by = :user_id
+                GROUP BY status
+            """)
             
-            # Calcular métricas gerais
-            total_projects = sum(status_counts.values())
-            active_projects = status_counts.get("development", 0) + status_counts.get("testing", 0)
-            completed_projects = status_counts.get("deployed", 0) + status_counts.get("maintenance", 0)
+            result = await db.execute(status_counts_query, {"user_id": user_id})
+            status_counts = {row.status: row.count for row in result}
             
-            # Calcular ROI médio
-            avg_roi = await ProjectService._calculate_average_roi(db, user_id)
+            # Query otimizada para ROI médio
+            avg_roi_query = text("""
+                SELECT AVG(roi_actual) as avg_roi
+                FROM projects
+                WHERE created_by = :user_id AND roi_actual IS NOT NULL
+            """)
             
-            # Projetos recentes
-            recent_projects = await ProjectService._get_recent_projects(db, user_id, limit=5)
+            result = await db.execute(avg_roi_query, {"user_id": user_id})
+            avg_roi = result.scalar() or 0
+            
+            # Query otimizada para projetos recentes
+            recent_projects_query = text("""
+                SELECT id, name, status, created_at
+                FROM projects
+                WHERE created_by = :user_id
+                ORDER BY created_at DESC
+                LIMIT 5
+            """)
+            
+            result = await db.execute(recent_projects_query, {"user_id": user_id})
+            recent_projects = [
+                {
+                    "id": str(row.id),
+                    "name": row.name,
+                    "status": row.status,
+                    "created_at": row.created_at.isoformat()
+                }
+                for row in result
+            ]
             
             summary = {
-                "total_projects": total_projects,
-                "active_projects": active_projects,
-                "completed_projects": completed_projects,
-                "status_distribution": status_counts,
-                "average_roi": avg_roi,
+                "total_projects": sum(status_counts.values()),
+                "status_counts": status_counts,
+                "average_roi": round(avg_roi, 2),
                 "recent_projects": recent_projects,
-                "completion_rate": (completed_projects / total_projects * 100) if total_projects > 0 else 0
+                "last_updated": datetime.utcnow().isoformat()
             }
             
             return summary
             
         except Exception as e:
+            logger.error(f"Erro ao obter resumo de projetos para usuário {user_id}: {e}")
+            raise e
+    
+    @staticmethod
+    @cache_result(ttl=1800, key_prefix="project_analytics")
+    async def get_project_analytics(
+        db: AsyncSession,
+        user_id: str,
+        days: int = 30
+    ) -> Dict[str, Any]:
+        """Obter analytics de projetos com cache de longo prazo"""
+        try:
+            start_date = datetime.utcnow() - timedelta(days=days)
+            
+            # Query otimizada para analytics
+            analytics_query = text("""
+                SELECT 
+                    DATE(created_at) as date,
+                    COUNT(*) as projects_created,
+                    AVG(estimated_effort) as avg_effort,
+                    SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed
+                FROM projects
+                WHERE created_by = :user_id AND created_at >= :start_date
+                GROUP BY DATE(created_at)
+                ORDER BY date DESC
+            """)
+            
+            result = await db.execute(analytics_query, {
+                "user_id": user_id,
+                "start_date": start_date
+            })
+            
+            analytics_data = [
+                {
+                    "date": row.date.isoformat(),
+                    "projects_created": row.projects_created,
+                    "avg_effort": float(row.avg_effort) if row.avg_effort else 0,
+                    "completed": row.completed
+                }
+                for row in result
+            ]
+            
+            return {
+                "period_days": days,
+                "analytics": analytics_data,
+                "total_projects": sum(item["projects_created"] for item in analytics_data),
+                "total_completed": sum(item["completed"] for item in analytics_data)
+            }
+            
+        except Exception as e:
+            logger.error(f"Erro ao obter analytics para usuário {user_id}: {e}")
             raise e
     
     @staticmethod
