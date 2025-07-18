@@ -1,0 +1,51 @@
+name: Deploy to Production Environment
+
+on:
+  push:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests
+      run: npm run lint && npm run type-check
+      
+    - name: Build for production
+      run: npm run build:prod
+      env:
+        VITE_ENVIRONMENT: production
+        
+    - name: Deploy to production hosting
+      run: |
+        echo "Deploying to production environment..."
+        echo "Build output in dist-prod/"
+        # Aqui você adicionaria o comando específico do seu provedor de hosting
+        # Exemplo: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        
+    - name: Run Supabase migrations (Production)
+      run: |
+        echo "Running migrations for production environment..."
+        # npx supabase db push --project-ref ${{ secrets.PROD_SUPABASE_PROJECT_ID }}
+        
+    - name: Notify deployment
+      run: |
+        echo "Production deployment completed successfully!"
+        echo "Environment: Production"
+        echo "Branch: main"

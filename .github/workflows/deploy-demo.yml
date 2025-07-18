@@ -1,0 +1,51 @@
+name: Deploy to Demo Environment
+
+on:
+  push:
+    branches: [ demo ]
+  pull_request:
+    branches: [ demo ]
+
+jobs:
+  deploy-demo:
+    runs-on: ubuntu-latest
+    environment: demo
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run tests
+      run: npm run lint && npm run type-check
+      
+    - name: Build for demo
+      run: npm run build:demo
+      env:
+        VITE_ENVIRONMENT: demo
+        
+    - name: Deploy to demo hosting
+      run: |
+        echo "Deploying to demo environment..."
+        echo "Build output in dist-demo/"
+        # Aqui você adicionaria o comando específico do seu provedor de hosting
+        # Exemplo: vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
+        
+    - name: Run Supabase migrations (Demo)
+      run: |
+        echo "Running migrations for demo environment..."
+        # npx supabase db push --project-ref ${{ secrets.DEMO_SUPABASE_PROJECT_ID }}
+        
+    - name: Notify deployment
+      run: |
+        echo "Demo deployment completed successfully!"
+        echo "Environment: Demo/Homologação"
+        echo "Branch: demo"

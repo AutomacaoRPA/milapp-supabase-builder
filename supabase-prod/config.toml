@@ -1,0 +1,21 @@
+# Configuração do Supabase para ambiente PRODUÇÃO
+project_id = "ktuvnllzmpsdgstsgbib"
+
+[db]
+# Configurações específicas do banco produção
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+# Configurações de auth específicas para produção
+
+[functions]
+enabled = true
+
+[storage]
+enabled = true

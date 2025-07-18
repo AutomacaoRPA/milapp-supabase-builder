@@ -1,0 +1,21 @@
+# Configuração do Supabase para ambiente DEMO/HOMOLOGAÇÃO
+project_id = "DEMO_PROJECT_ID" # Será atualizado com o ID real do projeto demo
+
+[db]
+# Configurações específicas do banco demo
+port = 54322
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+# Configurações de auth específicas para demo
+
+[functions]
+enabled = true
+
+[storage]
+enabled = true
