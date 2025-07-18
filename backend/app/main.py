@@ -8,6 +8,7 @@ import time
 
 from app.core.config import settings
 from app.core.database import init_db
+from app.core.security import security_middleware, add_security_headers
 from app.api.v1.router import api_router
 from app.services.ai_service import AIService
 from app.services.auth_service import AuthService
@@ -74,12 +75,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Middleware para métricas e logging
+# Middleware para métricas, logging e segurança
 @app.middleware("http")
-async def metrics_middleware(request, call_next):
+async def metrics_and_security_middleware(request, call_next):
     start_time = time.time()
     
+    # Security validation
+    try:
+        security_middleware.validate_request(request)
+    except HTTPException as e:
+        return e
+    
     response = await call_next(request)
+    
+    # Add security headers
+    response = add_security_headers(response)
     
     duration = time.time() - start_time
     REQUEST_LATENCY.observe(duration)

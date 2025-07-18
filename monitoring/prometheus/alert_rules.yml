@@ -1,0 +1,72 @@
+groups:
+  - name: milapp_alerts
+    rules:
+      # High response time alert
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, http_request_duration_seconds) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is above 200ms for {{ $labels.instance }}"
+
+      # High error rate alert
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for {{ $labels.instance }}"
+
+      # Service down alert
+      - alert: ServiceDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service is down"
+          description: "{{ $labels.instance }} has been down for more than 30 seconds"
+
+      # High CPU usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80% for {{ $labels.instance }}"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 85% for {{ $labels.instance }}"
+
+      # Database connection issues
+      - alert: DatabaseConnectionIssues
+        expr: rate(database_connection_errors_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection issues"
+          description: "Database connection errors detected for {{ $labels.instance }}"
+
+      # API rate limiting
+      - alert: APIRateLimitExceeded
+        expr: rate(http_requests_total{status="429"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API rate limit exceeded"
+          description: "Rate limiting is being triggered for {{ $labels.instance }}"

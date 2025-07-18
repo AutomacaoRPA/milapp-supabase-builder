@@ -1,0 +1,63 @@
+{
+  "timestamp": "2025-07-18T20:32:19.825656",
+  "summary": {
+    "linting": false,
+    "tests": false,
+    "security": false,
+    "performance": false
+  },
+  "details": {
+    "linting": {
+      "flake8": {
+        "returncode": 127,
+        "stdout": "",
+        "stderr": "/bin/sh: 1: flake8: not found\n",
+        "success": false
+      },
+      "flake8-complexity": {
+        "returncode": 127,
+        "stdout": "",
+        "stderr": "/bin/sh: 1: flake8: not found\n",
+        "success": false
+      },
+      "black": {
+        "returncode": 127,
+        "stdout": "",
+        "stderr": "/bin/sh: 1: black: not found\n",
+        "success": false
+      },
+      "isort": {
+        "returncode": 127,
+        "stdout": "",
+        "stderr": "/bin/sh: 1: isort: not found\n",
+        "success": false
+      }
+    },
+    "tests": {
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "/bin/sh: 1: pytest: not found\n",
+      "success": false
+    },
+    "security": {
+      "bandit": {
+        "returncode": 127,
+        "stdout": "",
+        "stderr": "/bin/sh: 1: bandit: not found\n",
+        "success": false
+      },
+      "safety": {
+        "returncode": 127,
+        "stdout": "",
+        "stderr": "/bin/sh: 1: safety: not found\n",
+        "success": false
+      }
+    },
+    "performance": {
+      "returncode": 127,
+      "stdout": "",
+      "stderr": "/bin/sh: 1: locust: not found\n",
+      "success": false
+    }
+  }
+}
