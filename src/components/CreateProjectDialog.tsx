@@ -10,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Project } from "@/hooks/useProjects";
 import { ProjectFormData } from "@/types/forms";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface CreateProjectDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCreateProject: (project: Omit<Project, "id" | "created_at" | "updated_at">) => void;
+  onCreateProject: (project: Omit<Project, "id" | "created_at" | "updated_at">) => Promise<void>;
 }
 
 const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProjectDialogProps) => {
@@ -36,6 +37,35 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { toast } = useToast();
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Nome do projeto é obrigatório";
+    }
+
+    if (formData.name.length > 255) {
+      newErrors.name = "Nome deve ter no máximo 255 caracteres";
+    }
+
+    if (formData.complexity_score < 1 || formData.complexity_score > 10) {
+      newErrors.complexity_score = "Complexidade deve estar entre 1 e 10";
+    }
+
+    if (formData.estimated_roi < 0) {
+      newErrors.estimated_roi = "ROI estimado não pode ser negativo";
+    }
+
+    if (formData.target_date && new Date(formData.target_date) < new Date()) {
+      newErrors.target_date = "Data meta não pode ser no passado";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   // Preenche automaticamente nome e email do usuário logado
   useEffect(() => {
@@ -50,7 +80,15 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    
+    if (!validateForm()) {
+      toast({
+        title: "Erro de Validação",
+        description: "Por favor, corrija os erros no formulário",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -91,11 +129,27 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
         target_date: "",
       });
       
+      setErrors({});
       onOpenChange(false);
+      
     } catch (error) {
       console.error("Erro ao criar projeto:", error);
+      toast({
+        title: "Erro",
+        description: "Falha ao criar projeto. Tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Limpar erro do campo quando usuário começa a digitar
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -107,9 +161,17 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
     5: "Crítica"
   };
 
+  const priorityColors = {
+    1: "bg-green-100 text-green-800",
+    2: "bg-blue-100 text-blue-800",
+    3: "bg-yellow-100 text-yellow-800",
+    4: "bg-orange-100 text-orange-800",
+    5: "bg-red-100 text-red-800"
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Criar Novo Projeto RPA</DialogTitle>
           <DialogDescription>
@@ -126,9 +188,13 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 id="name"
                 placeholder="Ex: Automação de Faturamento"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                className={errors.name ? "border-red-500" : ""}
                 required
               />
+              {errors.name && (
+                <p className="text-sm text-red-500">{errors.name}</p>
+              )}
             </div>
 
             {/* Categoria */}
@@ -159,6 +225,7 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 id="description"
                 placeholder="Descreva sua ideia em detalhes. Inclua o problema que resolve, como funciona e quais benefícios trará para os pacientes 50+ da MedSenior."
                 value={formData.description}
+<<<<<<< HEAD
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={4}
               />
@@ -172,6 +239,9 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 placeholder="Descreva qual impacto você espera que sua ideia tenha nos pacientes, na operação ou nos resultados da MedSenior."
                 value={formData.expected_impact}
                 onChange={(e) => setFormData({ ...formData, expected_impact: e.target.value })}
+=======
+                onChange={(e) => handleInputChange("description", e.target.value)}
+>>>>>>> cb12df2 ( PENTE FINO COMPLETO: Correções e validações implementadas - MILAPP 100% funcional\n\n CORREÇÕES IMPLEMENTADAS:\n- Hook useProjects com tratamento robusto de erros\n- CreateProjectDialog com validação completa\n- Navigation com busca e notificações funcionais\n- ProjectKanban com drag & drop operacional\n- Todos os botões conectados e funcionais\n\n FUNCIONALIDADES OPERACIONAIS:\n- Formulários com validação em tempo real\n- Navegação fluida entre páginas\n- Drag and drop no Kanban\n- Conexões com banco robustas\n- Feedback visual em todas as ações\n- Estados de loading implementados\n\n DOCUMENTAÇÃO:\n- PENTE_FINO_COMPLETO.md com detalhes das correções\n- Checklist de validação completo\n- Comandos para teste\n\n STATUS: PRONTO PARA VALIDAÇÃO COM EQUIPE!)
                 rows={3}
               />
             </div>
@@ -182,7 +252,11 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 <Label htmlFor="status">Status Inicial</Label>
                 <Select 
                   value={formData.status} 
+<<<<<<< HEAD
                   onValueChange={(value: string) => setFormData({ ...formData, status: value })}
+=======
+                  onValueChange={(value: any) => handleInputChange("status", value)}
+>>>>>>> cb12df2 ( PENTE FINO COMPLETO: Correções e validações implementadas - MILAPP 100% funcional\n\n CORREÇÕES IMPLEMENTADAS:\n- Hook useProjects com tratamento robusto de erros\n- CreateProjectDialog com validação completa\n- Navigation com busca e notificações funcionais\n- ProjectKanban com drag & drop operacional\n- Todos os botões conectados e funcionais\n\n FUNCIONALIDADES OPERACIONAIS:\n- Formulários com validação em tempo real\n- Navegação fluida entre páginas\n- Drag and drop no Kanban\n- Conexões com banco robustas\n- Feedback visual em todas as ações\n- Estados de loading implementados\n\n DOCUMENTAÇÃO:\n- PENTE_FINO_COMPLETO.md com detalhes das correções\n- Checklist de validação completo\n- Comandos para teste\n\n STATUS: PRONTO PARA VALIDAÇÃO COM EQUIPE!)
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -199,7 +273,7 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 <Label htmlFor="methodology">Metodologia</Label>
                 <Select 
                   value={formData.methodology} 
-                  onValueChange={(value) => setFormData({ ...formData, methodology: value })}
+                  onValueChange={(value) => handleInputChange("methodology", value)}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -218,17 +292,17 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Prioridade</Label>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   {[1, 2, 3, 4, 5].map((priority) => (
                     <Badge
                       key={priority}
                       variant={formData.priority === priority ? "default" : "outline"}
-                      className={`cursor-pointer ${
-                        priority >= 4 ? "hover:bg-destructive hover:text-destructive-foreground" :
-                        priority >= 3 ? "hover:bg-rpa hover:text-rpa-foreground" :
-                        "hover:bg-accent hover:text-accent-foreground"
+                      className={`cursor-pointer transition-colors ${
+                        formData.priority === priority 
+                          ? priorityColors[priority as keyof typeof priorityColors]
+                          : "hover:bg-gray-100"
                       }`}
-                      onClick={() => setFormData({ ...formData, priority })}
+                      onClick={() => handleInputChange("priority", priority)}
                     >
                       {priorityLabels[priority as keyof typeof priorityLabels]}
                     </Badge>
@@ -244,8 +318,12 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                   min="1"
                   max="10"
                   value={formData.complexity_score}
-                  onChange={(e) => setFormData({ ...formData, complexity_score: parseInt(e.target.value) || 1 })}
+                  onChange={(e) => handleInputChange("complexity_score", parseInt(e.target.value) || 1)}
+                  className={errors.complexity_score ? "border-red-500" : ""}
                 />
+                {errors.complexity_score && (
+                  <p className="text-sm text-red-500">{errors.complexity_score}</p>
+                )}
               </div>
             </div>
 
@@ -260,8 +338,12 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                   step="1000"
                   placeholder="Ex: 50000"
                   value={formData.estimated_roi}
-                  onChange={(e) => setFormData({ ...formData, estimated_roi: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => handleInputChange("estimated_roi", parseFloat(e.target.value) || 0)}
+                  className={errors.estimated_roi ? "border-red-500" : ""}
                 />
+                {errors.estimated_roi && (
+                  <p className="text-sm text-red-500">{errors.estimated_roi}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -270,8 +352,12 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                   id="target_date"
                   type="date"
                   value={formData.target_date}
-                  onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
+                  onChange={(e) => handleInputChange("target_date", e.target.value)}
+                  className={errors.target_date ? "border-red-500" : ""}
                 />
+                {errors.target_date && (
+                  <p className="text-sm text-red-500">{errors.target_date}</p>
+                )}
               </div>
             </div>
 
@@ -301,11 +387,28 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                onOpenChange(false);
+                setErrors({});
+              }}
+              disabled={isSubmitting}
+            >
               Cancelar
             </Button>
+<<<<<<< HEAD
             <Button type="submit" disabled={isSubmitting || !formData.name.trim()}>
               {isSubmitting ? "Revisar e Enviar Ideia" : "Criar Projeto"}
+=======
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || !formData.name.trim()}
+              className="bg-gradient-primary"
+            >
+              {isSubmitting ? "Criando..." : "Criar Projeto"}
+>>>>>>> cb12df2 ( PENTE FINO COMPLETO: Correções e validações implementadas - MILAPP 100% funcional\n\n CORREÇÕES IMPLEMENTADAS:\n- Hook useProjects com tratamento robusto de erros\n- CreateProjectDialog com validação completa\n- Navigation com busca e notificações funcionais\n- ProjectKanban com drag & drop operacional\n- Todos os botões conectados e funcionais\n\n FUNCIONALIDADES OPERACIONAIS:\n- Formulários com validação em tempo real\n- Navegação fluida entre páginas\n- Drag and drop no Kanban\n- Conexões com banco robustas\n- Feedback visual em todas as ações\n- Estados de loading implementados\n\n DOCUMENTAÇÃO:\n- PENTE_FINO_COMPLETO.md com detalhes das correções\n- Checklist de validação completo\n- Comandos para teste\n\n STATUS: PRONTO PARA VALIDAÇÃO COM EQUIPE!)
             </Button>
           </DialogFooter>
         </form>
