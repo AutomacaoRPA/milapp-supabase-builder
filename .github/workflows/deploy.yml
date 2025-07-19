@@ -1,0 +1,312 @@
+name: MILAPP MedSênior - CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Ambiente para deploy'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+
+env:
+  NODE_VERSION: '18'
+  SUPABASE_VERSION: '1.145.4'
+
+jobs:
+  # Testes e Validação
+  test:
+    name: Testes e Validação
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Instalar dependências
+      run: npm ci
+      
+    - name: Executar linting
+      run: npm run lint
+      
+    - name: Executar testes unitários
+      run: npm run test:unit
+      
+    - name: Executar testes de integração
+      run: npm run test:integration
+      
+    - name: Verificar cobertura de testes
+      run: npm run test:coverage
+      
+    - name: Upload cobertura para Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+
+  # Testes E2E
+  e2e:
+    name: Testes End-to-End
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Instalar dependências
+      run: npm ci
+      
+    - name: Setup Playwright
+      run: npx playwright install --with-deps
+      
+    - name: Executar testes E2E
+      run: npm run test:e2e
+      
+    - name: Upload resultados dos testes
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: playwright-report
+        path: test-results/
+        retention-days: 30
+
+  # Build e Deploy Staging
+  deploy-staging:
+    name: Deploy Staging
+    runs-on: ubuntu-latest
+    needs: [test, e2e]
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    environment: staging
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Instalar dependências
+      run: npm ci
+      
+    - name: Build da aplicação
+      run: npm run build
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+        VITE_AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        VITE_AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: ${{ env.SUPABASE_VERSION }}
+        
+    - name: Deploy Supabase (Staging)
+      run: |
+        supabase link --project-ref ${{ secrets.STAGING_SUPABASE_PROJECT_REF }}
+        supabase db push
+        supabase functions deploy
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        
+    - name: Deploy para Vercel (Staging)
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+        working-directory: ./
+
+  # Build e Deploy Production
+  deploy-production:
+    name: Deploy Production
+    runs-on: ubuntu-latest
+    needs: [test, e2e]
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production')
+    environment: production
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Instalar dependências
+      run: npm ci
+      
+    - name: Build da aplicação
+      run: npm run build
+      env:
+        VITE_SUPABASE_URL: ${{ secrets.PRODUCTION_SUPABASE_URL }}
+        VITE_SUPABASE_ANON_KEY: ${{ secrets.PRODUCTION_SUPABASE_ANON_KEY }}
+        VITE_AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        VITE_AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: ${{ env.SUPABASE_VERSION }}
+        
+    - name: Deploy Supabase (Production)
+      run: |
+        supabase link --project-ref ${{ secrets.PRODUCTION_SUPABASE_PROJECT_REF }}
+        supabase db push
+        supabase functions deploy
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        
+    - name: Deploy para Vercel (Production)
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+        working-directory: ./
+
+  # Testes de Performance
+  performance:
+    name: Testes de Performance
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Instalar dependências
+      run: npm ci
+      
+    - name: Executar testes de performance
+      run: npm run test:performance
+      
+    - name: Upload relatório de performance
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-report
+        path: test-results/lighthouse.json
+        retention-days: 30
+
+  # Testes de Segurança
+  security:
+    name: Testes de Segurança
+    runs-on: ubuntu-latest
+    needs: [test]
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Instalar dependências
+      run: npm ci
+      
+    - name: Executar auditoria de segurança
+      run: npm audit --audit-level=moderate
+      
+    - name: Executar testes de segurança
+      run: npm run test:security
+
+  # Notificações
+  notify:
+    name: Notificações
+    runs-on: ubuntu-latest
+    needs: [deploy-staging, deploy-production, performance, security]
+    if: always()
+    
+    steps:
+    - name: Notificar sucesso
+      if: success()
+      run: |
+        echo "✅ Deploy concluído com sucesso!"
+        echo "Staging: ${{ needs.deploy-staging.result }}"
+        echo "Production: ${{ needs.deploy-production.result }}"
+        
+    - name: Notificar falha
+      if: failure()
+      run: |
+        echo "❌ Deploy falhou!"
+        echo "Staging: ${{ needs.deploy-staging.result }}"
+        echo "Production: ${{ needs.deploy-production.result }}"
+        
+    - name: Notificar via Teams (Sucesso)
+      if: success()
+      uses: skitionek/notify-microsoft-teams@master
+      with:
+        webhook_url: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        title: "🚀 MILAPP MedSênior - Deploy Concluído"
+        message: |
+          **Deploy realizado com sucesso!**
+          
+          ✅ Testes: ${{ needs.test.result }}
+          ✅ E2E: ${{ needs.e2e.result }}
+          ✅ Staging: ${{ needs.deploy-staging.result }}
+          ✅ Production: ${{ needs.deploy-production.result }}
+          ✅ Performance: ${{ needs.performance.result }}
+          ✅ Segurança: ${{ needs.security.result }}
+          
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          
+    - name: Notificar via Teams (Falha)
+      if: failure()
+      uses: skitionek/notify-microsoft-teams@master
+      with:
+        webhook_url: ${{ secrets.TEAMS_WEBHOOK_URL }}
+        title: "❌ MILAPP MedSênior - Deploy Falhou"
+        message: |
+          **Deploy falhou!**
+          
+          ❌ Testes: ${{ needs.test.result }}
+          ❌ E2E: ${{ needs.e2e.result }}
+          ❌ Staging: ${{ needs.deploy-staging.result }}
+          ❌ Production: ${{ needs.deploy-production.result }}
+          ❌ Performance: ${{ needs.performance.result }}
+          ❌ Segurança: ${{ needs.security.result }}
+          
+          **Commit:** ${{ github.sha }}
+          **Branch:** ${{ github.ref_name }}
+          
+          Verificar logs para mais detalhes. 

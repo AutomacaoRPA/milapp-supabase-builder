@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<<<<<<< HEAD
     <title>MILAPP - Centro de Excelência em Automação RPA | MedSênior</title>
     <meta name="description" content="MILAPP - Plataforma de gestão de projetos RPA da MedSênior. Bem envelhecer com tecnologia e inovação." />
     <meta name="author" content="MedSênior" />
@@ -27,14 +28,89 @@
     <meta property="og:description" content="Plataforma de gestão de projetos RPA da MedSênior. Bem envelhecer com tecnologia e inovação." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/medsenior-og-image.png" />
+=======
+    <title>MILAPP - Centro de Excelência em Automação | MedSênior</title>
+    <meta name="description" content="Centro de Excelência em Automação RPA da MedSênior - Bem envelhecer bem com tecnologia" />
+    <meta name="author" content="MedSênior" />
 
+    <!-- PWA MedSênior -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#327746" />
+    <meta name="background-color" content="#fafafa" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="MILAPP MedSênior" />
+    <link rel="apple-touch-icon" href="/assets/medsenior-icon-192.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/assets/medsenior-icon-152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/medsenior-icon-180.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/assets/medsenior-icon-167.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="MILAPP - Centro de Excelência em Automação | MedSênior" />
+    <meta property="og:description" content="Centro de Excelência em Automação RPA da MedSênior - Bem envelhecer bem com tecnologia" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/assets/medsenior-icon-512.png" />
+>>>>>>> 6082052 ( MILAPP v2.0 - Implementação Completa ITIL 4 + IA Multiagente + Segurança Corporativa)
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
+<<<<<<< HEAD
     <meta name="twitter:site" content="@medsenior" />
     <meta name="twitter:image" content="/medsenior-og-image.png" />
+=======
+    <meta name="twitter:title" content="MILAPP - Centro de Excelência em Automação | MedSênior" />
+    <meta name="twitter:description" content="Centro de Excelência em Automação RPA da MedSênior - Bem envelhecer bem com tecnologia" />
+    <meta name="twitter:image" content="/assets/medsenior-icon-512.png" />
+
+    <!-- Preload critical resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- Security headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="X-Frame-Options" content="DENY" />
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+>>>>>>> 6082052 ( MILAPP v2.0 - Implementação Completa ITIL 4 + IA Multiagente + Segurança Corporativa)
   </head>
 
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration MedSênior -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('🏥 Service Worker MedSênior registrado com sucesso');
+              
+              // Verificar atualizações
+              registration.addEventListener('updatefound', () => {
+                console.log('🔄 Nova versão MedSênior disponível');
+              });
+            })
+            .catch(error => {
+              console.error('❌ Erro ao registrar Service Worker MedSênior:', error);
+            });
+        });
+      }
+      
+      // Detectar instalação PWA
+      window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('📱 Instalação PWA MedSênior disponível');
+        window.deferredPrompt = e;
+      });
+      
+      // Detectar instalação concluída
+      window.addEventListener('appinstalled', () => {
+        console.log('✅ MILAPP MedSênior instalado com sucesso');
+        window.deferredPrompt = null;
+      });
+    </script>
   </body>
 </html>

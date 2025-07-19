@@ -1,0 +1,11 @@
+<svg width="120" height="40" viewBox="0 0 120 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo verde MedSênior -->
+  <rect width="40" height="40" rx="8" fill="#327746"/>
+  
+  <!-- Letras MS em branco -->
+  <text x="20" y="26" font-family="Darker Grotesque, sans-serif" font-size="18" font-weight="700" text-anchor="middle" fill="white">MS</text>
+  
+  <!-- Texto MedSênior -->
+  <text x="50" y="16" font-family="Darker Grotesque, sans-serif" font-size="14" font-weight="600" fill="#327746">MedSênior</text>
+  <text x="50" y="30" font-family="Antique Olive, sans-serif" font-size="10" fill="#4aa455">Bem envelhecer bem</text>
+</svg> 

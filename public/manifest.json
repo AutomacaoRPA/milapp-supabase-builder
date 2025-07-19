@@ -1,0 +1,131 @@
+{
+  "name": "MILAPP - Centro de Excelência MedSênior",
+  "short_name": "MILAPP MedSênior",
+  "description": "Plataforma completa para gestão de Centro de Excelência em Automação - bem envelhecer bem",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#327746",
+  "background_color": "#fafafa",
+  "categories": ["business", "productivity", "medical"],
+  "lang": "pt-BR",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/assets/medsenior-icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/medsenior-icon-96.png", 
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/medsenior-icon-128.png",
+      "sizes": "128x128", 
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/medsenior-icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/medsenior-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/medsenior-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/assets/screenshot-desktop.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "MILAPP Dashboard - Visão Desktop"
+    },
+    {
+      "src": "/assets/screenshot-mobile.png", 
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "MILAPP Mobile - Discovery IA"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Discovery IA",
+      "short_name": "Discovery",
+      "description": "Bem descobrir processos com IA",
+      "url": "/discovery",
+      "icons": [
+        {
+          "src": "/assets/discovery-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Painel", 
+      "description": "Bem monitorar métricas e KPIs",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/assets/dashboard-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Projetos",
+      "short_name": "Projetos",
+      "description": "Bem gerenciar projetos de automação",
+      "url": "/projects",
+      "icons": [
+        {
+          "src": "/assets/projects-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Quality Gates",
+      "short_name": "Quality",
+      "description": "Bem controlar qualidade G1-G4",
+      "url": "/quality-gates",
+      "icons": [
+        {
+          "src": "/assets/quality-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+medsenior",
+      "url": "/?protocol=%s"
+    }
+  ]
+} 

@@ -1,0 +1,141 @@
+name: MILAPP MedSênior - CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '18'
+  PROJECT_NAME: 'milapp-medsenior'
+
+jobs:
+  quality-check:
+    name: 🔍 Quality Check - Bem Validar
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: |
+          npm ci
+          echo "✅ Dependências instaladas com sucesso"
+          
+      - name: 🔧 Type Check
+        run: |
+          npm run type-check
+          echo "✅ Verificação de tipos bem executada"
+          
+      - name: 🎨 Lint Check
+        run: |
+          npm run lint
+          echo "✅ Código bem formatado segundo padrões MedSênior"
+          
+      - name: 🧪 Unit Tests
+        run: |
+          npm run test:coverage
+          echo "✅ Testes bem executados - Qualidade MedSênior"
+          
+      - name: 📊 Upload Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          flags: unit-tests
+          name: MILAPP-MedSenior-Coverage
+
+  build-test:
+    name: 🏗️ Build & Test - Bem Construir
+    needs: quality-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: 📦 Install Dependencies
+        run: npm ci
+        
+      - name: 🏗️ Build Application
+        run: |
+          npm run build
+          echo "✅ Build bem sucedido - Pronto para produção"
+          
+      - name: 🎭 E2E Tests
+        run: |
+          npm run test:e2e
+          echo "✅ Testes E2E bem executados"
+          
+      - name: 📁 Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-files
+          path: dist/
+
+  deploy-staging:
+    name: 🚀 Deploy Staging - Bem Testar
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment:
+      name: staging
+      url: https://milapp-staging.medsenior.com.br
+    steps:
+      - name: 📥 Download Build
+        uses: actions/download-artifact@v3
+        with:
+          name: build-files
+          path: dist/
+          
+      - name: 🚀 Deploy to Staging
+        run: |
+          echo "🏥 Fazendo deploy para ambiente de testes MedSênior"
+          echo "🌱 Bem testar para bem entregar"
+          # Adicione comandos de deploy específicos aqui
+          
+      - name: 🔍 Health Check
+        run: |
+          curl -f https://milapp-staging.medsenior.com.br/health || exit 1
+          echo "✅ Staging bem configurado e funcionando"
+
+  deploy-production:
+    name: 🌟 Deploy Production - Bem Entregar
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://milapp.medsenior.com.br
+    steps:
+      - name: 📥 Download Build
+        uses: actions/download-artifact@v3
+        with:
+          name: build-files
+          path: dist/
+          
+      - name: 🌟 Deploy to Production
+        run: |
+          echo "🏥 Fazendo deploy para produção MedSênior"
+          echo "🎯 Bem entregar para bem envelhecer"
+          # Adicione comandos de deploy de produção aqui
+          
+      - name: 🔍 Production Health Check
+        run: |
+          curl -f https://milapp.medsenior.com.br/health || exit 1
+          echo "✅ Produção bem configurada - MedSênior ativo"
+          
+      - name: 📢 Notify Success
+        run: |
+          echo "🎉 Deploy bem sucedido!"
+          echo "🏥 MILAPP MedSênior está bem ativo em produção" 

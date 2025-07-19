@@ -1,0 +1,355 @@
+:root {
+  /* Cores MedSênior */
+  --medsenior-primary: #327746;
+  --medsenior-secondary: #95c11f;
+  --medsenior-accent: #4aa455;
+  --medsenior-dark: #20463c;
+  --medsenior-light: #e7e365;
+  --medsenior-warning: #e69732;
+  --medsenior-error: #c32f26;
+  
+  /* Tipografia acessível */
+  --font-heading: "Darker Grotesque", sans-serif;
+  --font-body: "Antique Olive", sans-serif;
+  --font-size-base: 18px; /* Maior para 49+ */
+  --line-height-base: 1.6; /* Melhor legibilidade */
+  
+  /* Espaçamentos inclusivos */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-xxl: 48px;
+  
+  /* Bordas suaves */
+  --border-radius-sm: 8px;
+  --border-radius-md: 12px;
+  --border-radius-lg: 16px;
+  --border-radius-xl: 24px;
+}
+
+/* Importação de fontes */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Design Inclusivo - Baseado no brandbook MedSênior */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body), "Inter", sans-serif;
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--medsenior-dark);
+  background-color: #fafafa;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tipografia MedSênior */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), "Inter", sans-serif;
+  color: var(--medsenior-primary);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+h1 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+h2 {
+  font-size: 2rem;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1.75rem;
+  line-height: 1.3;
+}
+
+h4 {
+  font-size: 1.5rem;
+  line-height: 1.4;
+}
+
+h5 {
+  font-size: 1.25rem;
+  line-height: 1.4;
+}
+
+h6 {
+  font-size: 1.125rem;
+  line-height: 1.4;
+}
+
+p {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--medsenior-dark);
+  line-height: var(--line-height-base);
+}
+
+/* Links acessíveis */
+a {
+  color: var(--medsenior-primary);
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+a:hover {
+  color: var(--medsenior-accent);
+  text-decoration: underline;
+}
+
+a:focus {
+  outline: 2px solid var(--medsenior-primary);
+  outline-offset: 2px;
+}
+
+/* Botões MedSênior */
+.btn-medsenior {
+  background: var(--medsenior-primary);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  padding: 14px 28px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: var(--font-body), "Inter", sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  min-height: 48px; /* Tamanho mínimo para acessibilidade */
+}
+
+.btn-medsenior:hover {
+  background: var(--medsenior-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(50, 119, 70, 0.3);
+}
+
+.btn-medsenior:active {
+  transform: translateY(0);
+}
+
+.btn-medsenior:focus {
+  outline: 2px solid var(--medsenior-primary);
+  outline-offset: 2px;
+}
+
+.btn-medsenior:disabled {
+  background: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Botões secundários */
+.btn-medsenior-secondary {
+  background: transparent;
+  color: var(--medsenior-primary);
+  border: 2px solid var(--medsenior-primary);
+  border-radius: var(--border-radius-md);
+  padding: 12px 26px;
+  font-size: 16px;
+  font-weight: 500;
+  font-family: var(--font-body), "Inter", sans-serif;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  min-height: 48px;
+}
+
+.btn-medsenior-secondary:hover {
+  background: var(--medsenior-primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(50, 119, 70, 0.3);
+}
+
+/* Cards MedSênior */
+.card-medsenior {
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 2px 16px rgba(50, 119, 70, 0.1);
+  border: 1px solid rgba(50, 119, 70, 0.1);
+  padding: var(--spacing-lg);
+  transition: all 0.3s ease;
+}
+
+.card-medsenior:hover {
+  box-shadow: 0 4px 24px rgba(50, 119, 70, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Contraste para baixa visão */
+.high-contrast {
+  background: var(--medsenior-dark);
+  color: #ffffff;
+}
+
+.high-contrast h1,
+.high-contrast h2,
+.high-contrast h3,
+.high-contrast h4,
+.high-contrast h5,
+.high-contrast h6 {
+  color: #ffffff;
+}
+
+.high-contrast .btn-medsenior {
+  background: #ffffff;
+  color: var(--medsenior-dark);
+}
+
+/* Modo de alto contraste */
+@media (prefers-contrast: high) {
+  :root {
+    --medsenior-primary: #000000;
+    --medsenior-dark: #000000;
+    --medsenior-accent: #000000;
+  }
+  
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+  
+  .card-medsenior {
+    border: 2px solid #000000;
+    box-shadow: none;
+  }
+}
+
+/* Redução de movimento */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .btn-medsenior:hover,
+  .btn-medsenior-secondary:hover,
+  .card-medsenior:hover {
+    transform: none;
+  }
+}
+
+/* Foco visível para navegação por teclado */
+*:focus {
+  outline: 2px solid var(--medsenior-primary);
+  outline-offset: 2px;
+}
+
+/* Utilitários de acessibilidade */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Scrollbar personalizada */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: var(--border-radius-sm);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--medsenior-primary);
+  border-radius: var(--border-radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--medsenior-accent);
+}
+
+/* Animações suaves */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsividade inclusiva */
+@media (max-width: 768px) {
+  :root {
+    --font-size-base: 16px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+  }
+  
+  .btn-medsenior,
+  .btn-medsenior-secondary {
+    padding: 16px 24px;
+    font-size: 18px;
+    min-height: 56px;
+  }
+}
+
+/* Impressão */
+@media print {
+  body {
+    background: white;
+    color: black;
+    font-size: 12pt;
+  }
+  
+  .btn-medsenior,
+  .btn-medsenior-secondary {
+    display: none;
+  }
+  
+  .card-medsenior {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+} 

@@ -1,0 +1,60 @@
+import { Box, Typography, Card, CardContent, Button } from '@mui/material'
+import { FolderSpecial, Add } from '@mui/icons-material'
+import { motion } from 'framer-motion'
+
+export function ProjectsPage() {
+  return (
+    <Box sx={{ p: 3 }}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Typography 
+          variant="h4" 
+          sx={{ 
+            mb: 3,
+            fontFamily: '"Darker Grotesque", sans-serif',
+            color: 'primary.main',
+            fontWeight: 600
+          }}
+        >
+          Projetos Bem Estruturados
+        </Typography>
+        
+        <Typography 
+          variant="body1" 
+          sx={{ 
+            mb: 4,
+            color: 'text.secondary',
+            fontFamily: '"Antique Olive", sans-serif',
+            fontSize: '1.125rem'
+          }}
+        >
+          Bem gerenciar projetos de automação com metodologia ágil
+        </Typography>
+
+        <Card className="card-medsenior">
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <FolderSpecial sx={{ color: 'primary.main', mr: 1 }} />
+              <Typography variant="h6" color="primary.main">
+                Gestão de Projetos
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Visualize e gerencie todos os projetos de automação
+            </Typography>
+            <Button 
+              variant="contained" 
+              startIcon={<Add />}
+              className="btn-medsenior"
+            >
+              Novo Projeto
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </Box>
+  )
+} 

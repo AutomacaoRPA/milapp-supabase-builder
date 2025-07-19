@@ -1,0 +1,81 @@
+groups:
+  - name: medsenior-milapp
+    rules:
+      # Uptime monitoring
+      - alert: MILAPPDown
+        expr: up{job="milapp-medsenior"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: milapp-medsenior
+        annotations:
+          summary: "MILAPP MedSênior está fora do ar"
+          description: "A aplicação MILAPP MedSênior não está respondendo há mais de 1 minuto"
+
+      # Response time monitoring
+      - alert: MILAPPSlowResponse
+        expr: http_request_duration_seconds{job="milapp-medsenior"} > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: milapp-medsenior
+        annotations:
+          summary: "MILAPP MedSênior com resposta lenta"
+          description: "A aplicação está respondendo em mais de 2 segundos"
+
+      # Error rate monitoring
+      - alert: MILAPPHighErrorRate
+        expr: rate(http_requests_total{job="milapp-medsenior", status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          service: milapp-medsenior
+        annotations:
+          summary: "Taxa de erro alta no MILAPP MedSênior"
+          description: "Mais de 10% das requisições estão retornando erro 5xx"
+
+      # Memory usage
+      - alert: MILAPPHighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: milapp-medsenior
+        annotations:
+          summary: "Uso de memória alto no MILAPP MedSênior"
+          description: "Uso de memória está acima de 90%"
+
+      # Disk usage
+      - alert: MILAPPHighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: milapp-medsenior
+        annotations:
+          summary: "Uso de disco alto no MILAPP MedSênior"
+          description: "Uso de disco está acima de 85%"
+
+      # Health check
+      - alert: MILAPPHealthCheckFailed
+        expr: health_check_status{service="milapp-medsenior"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: milapp-medsenior
+        annotations:
+          summary: "Health check falhou no MILAPP MedSênior"
+          description: "O health check da aplicação está falhando"
+
+      # Custom MedSênior metrics
+      - record: medsenior:automations_active
+        expr: sum(automations_total{status="active"})
+
+      - record: medsenior:roi_average
+        expr: avg(roi_percentage)
+
+      - record: medsenior:hours_saved
+        expr: sum(hours_saved_total)
+
+      - record: medsenior:user_satisfaction
+        expr: avg(user_satisfaction_score) 

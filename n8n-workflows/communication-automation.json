@@ -1,0 +1,909 @@
+{
+  "name": "MILAPP Communication Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "milapp-communication"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "event-type-check",
+              "leftValue": "={{ $json.event_type }}",
+              "rightValue": "new_request",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "new-request-filter",
+      "name": "New Request Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "event-type-check",
+              "leftValue": "={{ $json.event_type }}",
+              "rightValue": "status_change",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "status-change-filter",
+      "name": "Status Change Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "event-type-check",
+              "leftValue": "={{ $json.event_type }}",
+              "rightValue": "ai_response",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ai-response-filter",
+      "name": "AI Response Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "event-type-check",
+              "leftValue": "={{ $json.event_type }}",
+              "rightValue": "approval_required",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "approval-required-filter",
+      "name": "Approval Required Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "event-type-check",
+              "leftValue": "={{ $json.event_type }}",
+              "rightValue": "completion",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "completion-filter",
+      "name": "Completion Filter",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [460, 700]
+    },
+    {
+      "parameters": {
+        "resource": "user",
+        "operation": "get",
+        "userId": "={{ $json.user_id }}"
+      },
+      "id": "get-user-email",
+      "name": "Get User Email",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "user",
+        "operation": "get",
+        "userId": "={{ $json.user_id }}"
+      },
+      "id": "get-user-email-status",
+      "name": "Get User Email Status",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 400],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "user",
+        "operation": "get",
+        "userId": "={{ $json.user_id }}"
+      },
+      "id": "get-user-email-ai",
+      "name": "Get User Email AI",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 500],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "user",
+        "operation": "get",
+        "userId": "={{ $json.user_id }}"
+      },
+      "id": "get-user-email-approval",
+      "name": "Get User Email Approval",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 600],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "user",
+        "operation": "get",
+        "userId": "={{ $json.user_id }}"
+      },
+      "id": "get-user-email-completion",
+      "name": "Get User Email Completion",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 700],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-credentials",
+          "name": "Supabase API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@milapp.com",
+        "toEmail": "={{ $json.data.email }}",
+        "subject": "Nova Solicitação Criada: {{ $('webhook-trigger').item.json.request_title }}",
+        "text": "Sua solicitação foi criada com sucesso!\n\nTítulo: {{ $('webhook-trigger').item.json.request_title }}\nPrioridade: {{ $('webhook-trigger').item.json.priority }}\nData: {{ $('webhook-trigger').item.json.created_at }}\n\nAcompanhe o progresso em: {{ $('webhook-trigger').item.json.link }}",
+        "html": "<h2>Sua solicitação foi criada com sucesso!</h2><p><strong>Título:</strong> {{ $('webhook-trigger').item.json.request_title }}</p><p><strong>Prioridade:</strong> {{ $('webhook-trigger').item.json.priority }}</p><p><strong>Data:</strong> {{ $('webhook-trigger').item.json.created_at }}</p><p>Acompanhe o progresso em: <a href=\"{{ $('webhook-trigger').item.json.link }}\">{{ $('webhook-trigger').item.json.link }}</a></p>"
+      },
+      "id": "send-email-new-request",
+      "name": "Send Email - New Request",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 300],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@milapp.com",
+        "toEmail": "={{ $json.data.email }}",
+        "subject": "Status Atualizado: {{ $('webhook-trigger').item.json.request_title }}",
+        "text": "Status da sua solicitação foi atualizado\n\nSolicitação: {{ $('webhook-trigger').item.json.request_title }}\nStatus Anterior: {{ $('webhook-trigger').item.json.from_status }}\nNovo Status: {{ $('webhook-trigger').item.json.to_status }}\nData: {{ $('webhook-trigger').item.json.updated_at }}\n\nVeja os detalhes em: {{ $('webhook-trigger').item.json.link }}",
+        "html": "<h2>Status da sua solicitação foi atualizado</h2><p><strong>Solicitação:</strong> {{ $('webhook-trigger').item.json.request_title }}</p><p><strong>Status Anterior:</strong> {{ $('webhook-trigger').item.json.from_status }}</p><p><strong>Novo Status:</strong> {{ $('webhook-trigger').item.json.to_status }}</p><p><strong>Data:</strong> {{ $('webhook-trigger').item.json.updated_at }}</p><p>Veja os detalhes em: <a href=\"{{ $('webhook-trigger').item.json.link }}\">{{ $('webhook-trigger').item.json.link }}</a></p>"
+      },
+      "id": "send-email-status-change",
+      "name": "Send Email - Status Change",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 400],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@milapp.com",
+        "toEmail": "={{ $json.data.email }}",
+        "subject": "Resposta da IA: {{ $('webhook-trigger').item.json.request_title }}",
+        "text": "IA respondeu sobre sua solicitação\n\nSolicitação: {{ $('webhook-trigger').item.json.request_title }}\nMensagem: {{ $('webhook-trigger').item.json.ai_message }}\n\nVeja a conversa em: {{ $('webhook-trigger').item.json.link }}",
+        "html": "<h2>IA respondeu sobre sua solicitação</h2><p><strong>Solicitação:</strong> {{ $('webhook-trigger').item.json.request_title }}</p><p><strong>Mensagem:</strong> {{ $('webhook-trigger').item.json.ai_message }}</p><p>Veja a conversa em: <a href=\"{{ $('webhook-trigger').item.json.link }}\">{{ $('webhook-trigger').item.json.link }}</a></p>"
+      },
+      "id": "send-email-ai-response",
+      "name": "Send Email - AI Response",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 500],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@milapp.com",
+        "toEmail": "={{ $json.data.email }}",
+        "subject": "Aprovação Necessária: {{ $('webhook-trigger').item.json.request_title }}",
+        "text": "Solicitação aguarda sua aprovação\n\nSolicitação: {{ $('webhook-trigger').item.json.request_title }}\nSolicitante: {{ $('webhook-trigger').item.json.solicitante_name }}\n\nAprove ou rejeite em: {{ $('webhook-trigger').item.json.link }}",
+        "html": "<h2>Solicitação aguarda sua aprovação</h2><p><strong>Solicitação:</strong> {{ $('webhook-trigger').item.json.request_title }}</p><p><strong>Solicitante:</strong> {{ $('webhook-trigger').item.json.solicitante_name }}</p><p>Aprove ou rejeite em: <a href=\"{{ $('webhook-trigger').item.json.link }}\">{{ $('webhook-trigger').item.json.link }}</a></p>"
+      },
+      "id": "send-email-approval",
+      "name": "Send Email - Approval Required",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 600],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@milapp.com",
+        "toEmail": "={{ $json.data.email }}",
+        "subject": "Solicitação Concluída: {{ $('webhook-trigger').item.json.request_title }}",
+        "text": "🎉 Sua solicitação foi concluída!\n\nSolicitação: {{ $('webhook-trigger').item.json.request_title }}\nConcluída em: {{ $('webhook-trigger').item.json.completed_at }}\nExecutado por: {{ $('webhook-trigger').item.json.executor_name }}\n\nAcesse o resultado em: {{ $('webhook-trigger').item.json.link }}",
+        "html": "<h2>🎉 Sua solicitação foi concluída!</h2><p><strong>Solicitação:</strong> {{ $('webhook-trigger').item.json.request_title }}</p><p><strong>Concluída em:</strong> {{ $('webhook-trigger').item.json.completed_at }}</p><p><strong>Executado por:</strong> {{ $('webhook-trigger').item.json.executor_name }}</p><p>Acesse o resultado em: <a href=\"{{ $('webhook-trigger').item.json.link }}\">{{ $('webhook-trigger').item.json.link }}</a></p>"
+      },
+      "id": "send-email-completion",
+      "name": "Send Email - Completion",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [900, 700],
+      "credentials": {
+        "smtp": {
+          "id": "smtp-credentials",
+          "name": "SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "chatId": "{{ $env.TEAMS_CHANNEL_ID }}",
+        "text": "🆕 Nova Solicitação Criada\n\n**Título:** {{ $('webhook-trigger').item.json.request_title }}\n**Prioridade:** {{ $('webhook-trigger').item.json.priority }}\n**Solicitante:** {{ $('webhook-trigger').item.json.solicitante_name }}\n\n[Ver Detalhes]({{ $('webhook-trigger').item.json.link }})"
+      },
+      "id": "send-teams-new-request",
+      "name": "Send Teams - New Request",
+      "type": "n8n-nodes-base.microsoftTeams",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "credentials": {
+        "microsoftTeamsOAuth2Api": {
+          "id": "teams-credentials",
+          "name": "Microsoft Teams OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "chatId": "{{ $env.TEAMS_CHANNEL_ID }}",
+        "text": "🔄 Status Atualizado\n\n**Solicitação:** {{ $('webhook-trigger').item.json.request_title }}\n**Status Anterior:** {{ $('webhook-trigger').item.json.from_status }}\n**Novo Status:** {{ $('webhook-trigger').item.json.to_status }}\n\n[Ver Detalhes]({{ $('webhook-trigger').item.json.link }})"
+      },
+      "id": "send-teams-status-change",
+      "name": "Send Teams - Status Change",
+      "type": "n8n-nodes-base.microsoftTeams",
+      "typeVersion": 1,
+      "position": [1120, 400],
+      "credentials": {
+        "microsoftTeamsOAuth2Api": {
+          "id": "teams-credentials",
+          "name": "Microsoft Teams OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "chatId": "{{ $env.TEAMS_CHANNEL_ID }}",
+        "text": "🤖 Resposta da IA\n\n**Solicitação:** {{ $('webhook-trigger').item.json.request_title }}\n**Mensagem:** {{ $('webhook-trigger').item.json.ai_message }}\n\n[Ver Conversa]({{ $('webhook-trigger').item.json.link }})"
+      },
+      "id": "send-teams-ai-response",
+      "name": "Send Teams - AI Response",
+      "type": "n8n-nodes-base.microsoftTeams",
+      "typeVersion": 1,
+      "position": [1120, 500],
+      "credentials": {
+        "microsoftTeamsOAuth2Api": {
+          "id": "teams-credentials",
+          "name": "Microsoft Teams OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "chatId": "{{ $env.TEAMS_CHANNEL_ID }}",
+        "text": "⚠️ Aprovação Necessária\n\n**Solicitação:** {{ $('webhook-trigger').item.json.request_title }}\n**Solicitante:** {{ $('webhook-trigger').item.json.solicitante_name }}\n\n[Revisar Solicitação]({{ $('webhook-trigger').item.json.link }})"
+      },
+      "id": "send-teams-approval",
+      "name": "Send Teams - Approval Required",
+      "type": "n8n-nodes-base.microsoftTeams",
+      "typeVersion": 1,
+      "position": [1120, 600],
+      "credentials": {
+        "microsoftTeamsOAuth2Api": {
+          "id": "teams-credentials",
+          "name": "Microsoft Teams OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "chatId": "{{ $env.TEAMS_CHANNEL_ID }}",
+        "text": "✅ Solicitação Concluída\n\n**Solicitação:** {{ $('webhook-trigger').item.json.request_title }}\n**Executado por:** {{ $('webhook-trigger').item.json.executor_name }}\n**Concluída em:** {{ $('webhook-trigger').item.json.completed_at }}\n\n[Ver Resultado]({{ $('webhook-trigger').item.json.link }})"
+      },
+      "id": "send-teams-completion",
+      "name": "Send Teams - Completion",
+      "type": "n8n-nodes-base.microsoftTeams",
+      "typeVersion": 1,
+      "position": [1120, 700],
+      "credentials": {
+        "microsoftTeamsOAuth2Api": {
+          "id": "teams-credentials",
+          "name": "Microsoft Teams OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "{{ $env.WHATSAPP_PHONE }}",
+        "body": "🆕 Nova solicitação criada: {{ $('webhook-trigger').item.json.request_title }}\n\nPrioridade: {{ $('webhook-trigger').item.json.priority }}\nSolicitante: {{ $('webhook-trigger').item.json.solicitante_name }}\n\nAcompanhe em: {{ $('webhook-trigger').item.json.link }}"
+      },
+      "id": "send-whatsapp-new-request",
+      "name": "Send WhatsApp - New Request",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1340, 300],
+      "credentials": {
+        "twilioApi": {
+          "id": "twilio-credentials",
+          "name": "Twilio API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "{{ $env.WHATSAPP_PHONE }}",
+        "body": "🔄 Status atualizado: {{ $('webhook-trigger').item.json.request_title }}\n\nStatus: {{ $('webhook-trigger').item.json.to_status }}\n\nVeja em: {{ $('webhook-trigger').item.json.link }}"
+      },
+      "id": "send-whatsapp-status-change",
+      "name": "Send WhatsApp - Status Change",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1340, 400],
+      "credentials": {
+        "twilioApi": {
+          "id": "twilio-credentials",
+          "name": "Twilio API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "{{ $env.WHATSAPP_PHONE }}",
+        "body": "🤖 IA respondeu: {{ $('webhook-trigger').item.json.request_title }}\n\n{{ $('webhook-trigger').item.json.ai_message }}\n\nVeja em: {{ $('webhook-trigger').item.json.link }}"
+      },
+      "id": "send-whatsapp-ai-response",
+      "name": "Send WhatsApp - AI Response",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1340, 500],
+      "credentials": {
+        "twilioApi": {
+          "id": "twilio-credentials",
+          "name": "Twilio API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "{{ $env.WHATSAPP_PHONE }}",
+        "body": "⚠️ Aprovação necessária: {{ $('webhook-trigger').item.json.request_title }}\n\nSolicitante: {{ $('webhook-trigger').item.json.solicitante_name }}\n\nAprove em: {{ $('webhook-trigger').item.json.link }}"
+      },
+      "id": "send-whatsapp-approval",
+      "name": "Send WhatsApp - Approval Required",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1340, 600],
+      "credentials": {
+        "twilioApi": {
+          "id": "twilio-credentials",
+          "name": "Twilio API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "to": "{{ $env.WHATSAPP_PHONE }}",
+        "body": "✅ Solicitação concluída: {{ $('webhook-trigger').item.json.request_title }}\n\nExecutado por: {{ $('webhook-trigger').item.json.executor_name }}\n\nVeja em: {{ $('webhook-trigger').item.json.link }}"
+      },
+      "id": "send-whatsapp-completion",
+      "name": "Send WhatsApp - Completion",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1340, 700],
+      "credentials": {
+        "twilioApi": {
+          "id": "twilio-credentials",
+          "name": "Twilio API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "log",
+        "operation": "create",
+        "level": "info",
+        "message": "Communication sent successfully",
+        "additionalFields": {
+          "event_type": "={{ $('webhook-trigger').item.json.event_type }}",
+          "user_id": "={{ $('webhook-trigger').item.json.user_id }}",
+          "project_id": "={{ $('webhook-trigger').item.json.project_id }}",
+          "channels": "email,teams,whatsapp"
+        }
+      },
+      "id": "log-success",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.log",
+      "typeVersion": 1,
+      "position": [1560, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"success\": true,\n  \"message\": \"Communication dispatched successfully\",\n  \"event_type\": \"{{ $('webhook-trigger').item.json.event_type }}\",\n  \"timestamp\": \"{{ $now }}\"\n}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1780, 500]
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "new-request-filter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "status-change-filter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "ai-response-filter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "approval-required-filter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "completion-filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "new-request-filter": {
+      "main": [
+        [
+          {
+            "node": "get-user-email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "status-change-filter": {
+      "main": [
+        [
+          {
+            "node": "get-user-email-status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai-response-filter": {
+      "main": [
+        [
+          {
+            "node": "get-user-email-ai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "approval-required-filter": {
+      "main": [
+        [
+          {
+            "node": "get-user-email-approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "completion-filter": {
+      "main": [
+        [
+          {
+            "node": "get-user-email-completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get-user-email": {
+      "main": [
+        [
+          {
+            "node": "send-email-new-request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get-user-email-status": {
+      "main": [
+        [
+          {
+            "node": "send-email-status-change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get-user-email-ai": {
+      "main": [
+        [
+          {
+            "node": "send-email-ai-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get-user-email-approval": {
+      "main": [
+        [
+          {
+            "node": "send-email-approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get-user-email-completion": {
+      "main": [
+        [
+          {
+            "node": "send-email-completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-email-new-request": {
+      "main": [
+        [
+          {
+            "node": "send-teams-new-request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-email-status-change": {
+      "main": [
+        [
+          {
+            "node": "send-teams-status-change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-email-ai-response": {
+      "main": [
+        [
+          {
+            "node": "send-teams-ai-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-email-approval": {
+      "main": [
+        [
+          {
+            "node": "send-teams-approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-email-completion": {
+      "main": [
+        [
+          {
+            "node": "send-teams-completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-teams-new-request": {
+      "main": [
+        [
+          {
+            "node": "send-whatsapp-new-request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-teams-status-change": {
+      "main": [
+        [
+          {
+            "node": "send-whatsapp-status-change",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-teams-ai-response": {
+      "main": [
+        [
+          {
+            "node": "send-whatsapp-ai-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-teams-approval": {
+      "main": [
+        [
+          {
+            "node": "send-whatsapp-approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-teams-completion": {
+      "main": [
+        [
+          {
+            "node": "send-whatsapp-completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-whatsapp-new-request": {
+      "main": [
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-whatsapp-status-change": {
+      "main": [
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-whatsapp-ai-response": {
+      "main": [
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-whatsapp-approval": {
+      "main": [
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "send-whatsapp-completion": {
+      "main": [
+        [
+          {
+            "node": "log-success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log-success": {
+      "main": [
+        [
+          {
+            "node": "webhook-response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-07-19T00:00:00.000Z",
+      "updatedAt": "2024-07-19T00:00:00.000Z",
+      "id": "milapp-communication",
+      "name": "MILAPP Communication"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-07-19T00:00:00.000Z",
+  "versionId": "1"
+} 

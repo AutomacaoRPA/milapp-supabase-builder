@@ -1,7 +1,6 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import CreateProjectDialog from '@/components/CreateProjectDialog';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { vi, expect, it, describe, beforeEach } from 'vitest'
+import { CreateProjectDialog } from '../../components/Projects/CreateProjectDialog'
 
 // Mock do useToast
 jest.mock('@/hooks/use-toast', () => ({

@@ -1,0 +1,239 @@
+name: Generate Changelog
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
+  release:
+    types: [ published ]
+
+jobs:
+  generate-changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Instalar conventional-changelog-cli
+        npm install -g conventional-changelog-cli
+        
+        # Gerar changelog
+        if [ "${{ github.event_name }}" = "release" ]; then
+          # Para releases, gerar changelog completo
+          conventional-changelog -p angular -i CHANGELOG.md -s -r 0
+        else
+          # Para PRs, gerar changelog incremental
+          conventional-changelog -p angular -i CHANGELOG.md -s
+        fi
+        
+        # Salvar changelog em variável
+        echo "changelog=$(cat CHANGELOG.md)" >> $GITHUB_OUTPUT
+        
+    - name: Commit changelog
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        if [ -n "$(git status --porcelain)" ]; then
+          git add CHANGELOG.md
+          git commit -m "docs: atualiza changelog automaticamente [skip ci]"
+          git push
+        fi
+        
+    - name: Create Release Notes
+      if: github.event_name == 'release'
+      run: |
+        # Criar release notes baseado no changelog
+        RELEASE_VERSION="${{ github.event.release.tag_name }}"
+        CHANGELOG_CONTENT="$(cat CHANGELOG.md)"
+        
+        # Extrair seção da versão atual
+        echo "$CHANGELOG_CONTENT" | sed -n "/^## \[$RELEASE_VERSION\]/,/^## /p" | head -n -1 > release_notes.md
+        
+        # Atualizar release no GitHub
+        gh release edit "$RELEASE_VERSION" --notes-file release_notes.md
+        
+    - name: Comment on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const changelog = `${{ steps.changelog.outputs.changelog }}`;
+          
+          // Extrair mudanças da PR
+          const prNumber = context.issue.number;
+          const commits = await github.rest.pulls.listCommits({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: prNumber
+          });
+          
+          // Analisar commits
+          const changes = {
+            features: [],
+            fixes: [],
+            breaking: [],
+            docs: [],
+            chore: []
+          };
+          
+          commits.data.forEach(commit => {
+            const message = commit.commit.message;
+            const type = message.match(/^(\w+)(\(.+\))?:/)?.[1];
+            
+            if (type === 'feat') {
+              changes.features.push(message);
+            } else if (type === 'fix') {
+              changes.fixes.push(message);
+            } else if (type === 'BREAKING') {
+              changes.breaking.push(message);
+            } else if (type === 'docs') {
+              changes.docs.push(message);
+            } else if (type === 'chore') {
+              changes.chore.push(message);
+            }
+          });
+          
+          // Criar comentário
+          let comment = '## 📋 Resumo das Mudanças\n\n';
+          
+          if (changes.features.length > 0) {
+            comment += '### ✨ Novas Funcionalidades\n';
+            changes.features.forEach(feat => {
+              comment += `- ${feat}\n`;
+            });
+            comment += '\n';
+          }
+          
+          if (changes.fixes.length > 0) {
+            comment += '### 🐛 Correções\n';
+            changes.fixes.forEach(fix => {
+              comment += `- ${fix}\n`;
+            });
+            comment += '\n';
+          }
+          
+          if (changes.breaking.length > 0) {
+            comment += '### ⚠️ Mudanças Breaking\n';
+            changes.breaking.forEach(breaking => {
+              comment += `- ${breaking}\n`;
+            });
+            comment += '\n';
+          }
+          
+          if (changes.docs.length > 0) {
+            comment += '### 📚 Documentação\n';
+            changes.docs.forEach(doc => {
+              comment += `- ${doc}\n`;
+            });
+            comment += '\n';
+          }
+          
+          comment += '---\n';
+          comment += '🤖 *Changelog gerado automaticamente*';
+          
+          await github.rest.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: prNumber,
+            body: comment
+          });
+
+  validate-commits:
+    name: Validate Commit Messages
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Validate commit messages
+      run: |
+        # Instalar commitlint
+        npm install -g @commitlint/cli @commitlint/config-conventional
+        
+        # Validar commits da PR
+        npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+        
+    - name: Check conventional commits
+      run: |
+        # Verificar se todos os commits seguem o padrão
+        git log --oneline ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | while read line; do
+          commit_hash=$(echo $line | cut -d' ' -f1)
+          commit_msg=$(echo $line | cut -d' ' -f2-)
+          
+          if ! echo "$commit_msg" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+"; then
+            echo "❌ Commit inválido: $commit_hash - $commit_msg"
+            echo "Formato esperado: type(scope): description"
+            echo "Tipos válidos: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert"
+            exit 1
+          fi
+        done
+
+  update-version:
+    name: Update Version
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Update package.json version
+      run: |
+        # Extrair versão do tag
+        VERSION="${{ github.event.release.tag_name }}"
+        VERSION=${VERSION#v}  # Remove 'v' prefix
+        
+        # Atualizar package.json
+        npm version $VERSION --no-git-tag-version
+        
+        # Commit e push
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add package.json package-lock.json
+        git commit -m "chore: atualiza versão para $VERSION [skip ci]"
+        git push 
