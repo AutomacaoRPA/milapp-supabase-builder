@@ -1,274 +1,145 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, LayoutGrid, Kanban, Target, Clock, TrendingUp, AlertTriangle, Filter, Search, ArrowRight, Users, GitBranch, Activity, CheckCircle2, BookOpen } from "lucide-react";
-import { useProjects, Project } from "@/hooks/useProjects";
-import ProjectKanban from "@/components/ProjectKanban";
-import ProjectGridView from "@/components/ProjectGridView";
-import ProjectFilters from "@/components/ProjectFilters";
-import CreateProjectDialog from "@/components/CreateProjectDialog";
-import PDDProjectView from "@/components/PDDProjectView";
-import WorkItemBoard from "@/components/WorkItemBoard";
-import SprintBoard from "@/components/SprintBoard";
-import PipelineManagement from "@/components/PipelineManagement";
-import DevOpsOverview from "@/components/DevOpsOverview";
-import InnovationPipelineGuide from "@/components/InnovationPipelineGuide";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
-import ScrumBoard from "@/components/ScrumBoard";
-import ProjectStatusColumns from "@/components/ProjectStatusColumns";
-import ProjectMetrics from "@/components/ProjectMetrics";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Plus, 
+  Search, 
+  Filter, 
+  Grid3X3, 
+  List, 
+  Calendar,
+  Users,
+  Target,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Activity,
+  ArrowLeft
+} from "lucide-react";
+import { useProjects } from "@/hooks/useProjects";
+import CreateProjectDialog from "@/components/CreateProjectDialog";
+import ProjectLifecycleManager from "@/components/ProjectLifecycleManager";
+import { Project } from "@/types/project-lifecycle";
 
-const Projetos = () => {
-  const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<"columns" | "kanban" | "grid" | "workitems" | "sprints" | "scrum" | "pipelines" | "devops" | "guide">("columns");
+const Projetos: React.FC = () => {
+  const { 
+    projects, 
+    loading, 
+    error, 
+    fetchProjects, 
+    createProject, 
+    updateProject, 
+    deleteProject 
+  } = useProjects();
+
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFilters, setSelectedFilters] = useState({
-    status: [],
-    priority: [],
-    methodology: [],
-  });
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  
-  const { projects, loading, createProject, updateProject } = useProjects();
 
-  // Se um projeto está selecionado, mostrar a visão PDD detalhada
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  const filteredProjects = projects.filter((project: Project) => {
+    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || project.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed": return "bg-green-100 text-green-800";
+      case "in_progress": return "bg-blue-100 text-blue-800";
+      case "pending": return "bg-gray-100 text-gray-800";
+      case "on_hold": return "bg-yellow-100 text-yellow-800";
+      case "cancelled": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "completed": return <CheckCircle2 className="h-4 w-4" />;
+      case "in_progress": return <Activity className="h-4 w-4" />;
+      case "pending": return <Clock className="h-4 w-4" />;
+      case "on_hold": return <AlertTriangle className="h-4 w-4" />;
+      case "cancelled": return <AlertTriangle className="h-4 w-4" />;
+      default: return <Clock className="h-4 w-4" />;
+    }
+  };
+
+  const handleProjectClick = (project: Project) => {
+    setSelectedProject(project);
+  };
+
+  const handleBackToList = () => {
+    setSelectedProject(null);
+  };
+
+  const handleCreateProject = async (projectData: Omit<Project, "id" | "created_at" | "updated_at">) => {
+    try {
+      await createProject(projectData);
+      setShowCreateDialog(false);
+    } catch (error) {
+      console.error("Erro ao criar projeto:", error);
+    }
+  };
+
+  // Se um projeto está selecionado, mostrar o gerenciador de ciclo de vida
   if (selectedProject) {
     return (
-      <PDDProjectView 
-        project={selectedProject}
-        onBack={() => setSelectedProject(null)}
-      />
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header com botão voltar */}
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={handleBackToList}>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar aos Projetos
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">Gestão do Projeto</h1>
+              <p className="text-muted-foreground">
+                Gerenciamento completo do ciclo de vida do projeto
+              </p>
+            </div>
+          </div>
+
+          {/* Componente centralizado */}
+          <ProjectLifecycleManager projectId={selectedProject.id} />
+        </div>
+      </div>
     );
   }
 
-  // Filtrar projetos baseado na busca e filtros
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = selectedFilters.status.length === 0 || 
-                         selectedFilters.status.includes(project.status);
-    
-    const matchesPriority = selectedFilters.priority.length === 0 || 
-                           selectedFilters.priority.includes(project.priority?.toString());
-    
-    const matchesMethodology = selectedFilters.methodology.length === 0 || 
-                              selectedFilters.methodology.includes(project.methodology);
-
-    return matchesSearch && matchesStatus && matchesPriority && matchesMethodology;
-  });
-
-  const statusCounts = {
-    total: filteredProjects.length,
-    ideacao: filteredProjects.filter(p => p.status === "ideacao").length,
-    qualidade_processos: filteredProjects.filter(p => p.status === "qualidade_processos").length,
-    planejamento: filteredProjects.filter(p => p.status === "planejamento").length,
-    hipotese_formulada: filteredProjects.filter(p => p.status === "hipotese_formulada").length,
-    analise_viabilidade: filteredProjects.filter(p => p.status === "analise_viabilidade").length,
-    prototipo_rapido: filteredProjects.filter(p => p.status === "prototipo_rapido").length,
-    validacao_prototipo: filteredProjects.filter(p => p.status === "validacao_prototipo").length,
-    mvp: filteredProjects.filter(p => p.status === "mvp").length,
-    teste_operacional: filteredProjects.filter(p => p.status === "teste_operacional").length,
-    escala_entrega: filteredProjects.filter(p => p.status === "escala_entrega").length,
-    acompanhamento_pos_entrega: filteredProjects.filter(p => p.status === "acompanhamento_pos_entrega").length,
-    sustentacao_evolucao: filteredProjects.filter(p => p.status === "sustentacao_evolucao").length,
-    concluido: filteredProjects.filter(p => p.status === "concluido").length,
-  };
-
-  const totalEstimatedROI = filteredProjects.reduce((sum, project) => 
-    sum + (project.estimated_roi || 0), 0
-  );
-
-  const highPriorityProjects = filteredProjects.filter(p => (p.priority || 0) >= 4).length;
-  const overdueProjects = filteredProjects.filter(p => {
-    if (!p.target_date) return false;
-    return new Date(p.target_date) < new Date() && p.status !== "concluido";
-  }).length;
-
-  const renderContent = () => {
-    if (loading) {
-      return (
-        <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-4">
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-24 w-full" />
-            ))}
-          </div>
-          <Skeleton className="h-96 w-full" />
-        </div>
-      );
-    }
-
-    // Para views que precisam de um projeto específico, use o primeiro projeto disponível
-    const sampleProject = filteredProjects[0];
-
-    switch (viewMode) {
-      case "guide":
-        return <InnovationPipelineGuide />;
-      case "workitems":
-        return sampleProject ? <WorkItemBoard project={sampleProject} /> : <div>Selecione um projeto</div>;
-      case "sprints":
-        return sampleProject ? <SprintBoard project={sampleProject} /> : <div>Selecione um projeto</div>;
-      case "scrum":
-        return sampleProject ? <ScrumBoard project={sampleProject} /> : <div>Selecione um projeto</div>;
-      case "pipelines":
-        return sampleProject ? <PipelineManagement project={sampleProject} /> : <div>Selecione um projeto</div>;
-      case "devops":
-        return sampleProject ? <DevOpsOverview project={sampleProject} /> : <div>Selecione um projeto</div>;
-      case "grid":
-        return (
-          <ProjectGridView 
-            projects={filteredProjects}
-            onProjectUpdate={updateProject}
-            onProjectSelect={setSelectedProject}
-          />
-        );
-      case "columns":
-        return (
-          <ProjectStatusColumns 
-            projects={filteredProjects}
-            onProjectUpdate={updateProject}
-            onProjectSelect={setSelectedProject}
-          />
-        );
-      case "kanban":
-      default:
-        return (
-          <ProjectKanban 
-            projects={filteredProjects} 
-            onProjectUpdate={updateProject}
-            onProjectSelect={setSelectedProject}
-          />
-        );
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background p-6 animate-fade-in">
-      <div className="max-w-full mx-auto space-y-6">
-        {/* Header com Governança */}
-        <div className="flex flex-col gap-4">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                MilApp - DevOps & Project Management
-              </h1>
-              <p className="text-muted-foreground">
-                Gestão completa de projetos com metodologia DevOps, Scrum e Esteira de Inovação
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-              </Button>
-              
-              <div className="flex gap-1 bg-muted rounded-lg p-1">
-                <Button
-                  variant={viewMode === "guide" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("guide")}
-                  title="Guia da Esteira"
-                >
-                  <BookOpen className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "columns" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("columns")}
-                  title="Colunas por Status"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "kanban" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("kanban")}
-                  title="Kanban Board"
-                >
-                  <Kanban className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "grid" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("grid")}
-                  title="Grid View"
-                >
-                  <LayoutGrid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "workitems" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("workitems")}
-                  title="Work Items"
-                >
-                  <Target className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "sprints" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("sprints")}
-                  title="Sprints"
-                >
-                  <Users className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "scrum" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("scrum")}
-                  title="Scrum Board"
-                >
-                  <TrendingUp className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "pipelines" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("pipelines")}
-                  title="Pipelines"
-                >
-                  <GitBranch className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "devops" ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setViewMode("devops")}
-                  title="DevOps Overview"
-                >
-                  <Activity className="h-4 w-4" />
-                </Button>
-              </div>
-              
-              <Button 
-                className="bg-gradient-primary"
-                onClick={() => setShowCreateDialog(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Ideia
-              </Button>
-
-              <Button 
-                variant="outline"
-                onClick={() => navigate('/projeto-detalhado')}
-              >
-                <Target className="h-4 w-4 mr-2" />
-                Ver Projeto Exemplo
-              </Button>
-            </div>
+    <div className="min-h-screen bg-background p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Projetos</h1>
+            <p className="text-muted-foreground">
+              Gerencie todos os seus projetos em um só lugar
+            </p>
           </div>
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Projeto
+          </Button>
+        </div>
 
-          {/* Barra de Busca e Controles */}
-          <div className="flex gap-4 items-center">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        {/* Filtros e Busca */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-1 gap-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Buscar projetos..."
                 value={searchTerm}
@@ -276,95 +147,195 @@ const Projetos = () => {
                 className="pl-10"
               />
             </div>
-            
-            <Badge variant="outline" className="text-sm">
-              {filteredProjects.length} de {projects.length} projetos
-            </Badge>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-input bg-background rounded-md"
+            >
+              <option value="all">Todos os Status</option>
+              <option value="pending">Pendente</option>
+              <option value="in_progress">Em Progresso</option>
+              <option value="completed">Concluído</option>
+              <option value="on_hold">Em Pausa</option>
+              <option value="cancelled">Cancelado</option>
+            </select>
           </div>
-
-          {/* Filtros Expandidos */}
-          {showFilters && (
-            <ProjectFilters
-              selectedFilters={selectedFilters}
-              onFiltersChange={setSelectedFilters}
-            />
-          )}
+          
+          <div className="flex gap-2">
+            <Button
+              variant={viewMode === "grid" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+            >
+              <Grid3X3 className="h-4 w-4 mr-2" />
+              Grid
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+            >
+              <List className="h-4 w-4 mr-2" />
+              Lista
+            </Button>
+          </div>
         </div>
 
-        {/* Métricas Detalhadas do Projeto */}
-        {viewMode === "guide" && (
-          <ProjectMetrics projects={filteredProjects} />
-        )}
-
-        {/* Indicadores de Governança - só mostrar nas views de overview */}
-        {(viewMode === "kanban" || viewMode === "grid" || viewMode === "columns") && (
-          <div className="grid gap-4 md:grid-cols-4">
-            <Card className="border-l-4 border-l-primary">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Target className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Captação de Ideias</p>
-                    <p className="text-2xl font-bold">{statusCounts.ideacao + statusCounts.qualidade_processos}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-rpa">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-rpa/10 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-rpa" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Priorização & Análise</p>
-                    <p className="text-2xl font-bold">{statusCounts.planejamento + statusCounts.hipotese_formulada + statusCounts.analise_viabilidade}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-accent">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
-                    <TrendingUp className="h-5 w-5 text-accent" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Em Desenvolvimento</p>
-                    <p className="text-2xl font-bold">{statusCounts.prototipo_rapido + statusCounts.validacao_prototipo + statusCounts.mvp}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-destructive">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <CheckCircle2 className="h-5 w-5 text-destructive" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Finalizadas</p>
-                    <p className="text-2xl font-bold">{statusCounts.teste_operacional + statusCounts.escala_entrega + statusCounts.acompanhamento_pos_entrega + statusCounts.sustentacao_evolucao + statusCounts.concluido}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Loading State */}
+        {loading && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i} className="animate-pulse">
+                <CardHeader>
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-3 bg-muted rounded w-1/2"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-3 bg-muted rounded w-full mb-2"></div>
+                  <div className="h-3 bg-muted rounded w-2/3"></div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
 
-        {/* Conteúdo Principal */}
-        {renderContent()}
+        {/* Error State */}
+        {error && (
+          <Card className="border-destructive">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <p>Erro ao carregar projetos: {error}</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Dialog de Criação */}
+        {/* Projects Grid */}
+        {!loading && !error && viewMode === "grid" && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {filteredProjects.map((project) => (
+              <Card 
+                key={project.id} 
+                className="cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleProjectClick(project)}
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">{project.title}</CardTitle>
+                    <Badge className={getStatusColor(project.status)}>
+                      {getStatusIcon(project.status)}
+                      <span className="ml-1 capitalize">
+                        {project.status.replace('_', ' ')}
+                      </span>
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4 line-clamp-3">
+                    {project.description}
+                  </p>
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      <span>{project.team_size || 0} membros</span>
+                    </div>
+                    {project.target_date && (
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>{new Date(project.target_date).toLocaleDateString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Projects List */}
+        {!loading && !error && viewMode === "list" && (
+          <div className="space-y-4">
+            {filteredProjects.map((project) => (
+              <Card 
+                key={project.id} 
+                className="cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => handleProjectClick(project)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-4 mb-2">
+                        <h3 className="text-lg font-semibold">{project.title}</h3>
+                        <Badge className={getStatusColor(project.status)}>
+                          {getStatusIcon(project.status)}
+                          <span className="ml-1 capitalize">
+                            {project.status.replace('_', ' ')}
+                          </span>
+                        </Badge>
+                      </div>
+                      <p className="text-muted-foreground mb-3">
+                        {project.description}
+                      </p>
+                      <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span>{project.team_size || 0} membros</span>
+                        </div>
+                        {project.target_date && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>{new Date(project.target_date).toLocaleDateString()}</span>
+                          </div>
+                        )}
+                        {project.priority && (
+                          <div className="flex items-center gap-1">
+                            <Target className="h-4 w-4" />
+                            <span>Prioridade {project.priority}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && filteredProjects.length === 0 && (
+          <Card>
+            <CardContent className="pt-6 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                  <Target className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">Nenhum projeto encontrado</h3>
+                  <p className="text-muted-foreground">
+                    {searchTerm || statusFilter !== "all" 
+                      ? "Tente ajustar os filtros de busca"
+                      : "Comece criando seu primeiro projeto"
+                    }
+                  </p>
+                </div>
+                {!searchTerm && statusFilter === "all" && (
+                  <Button onClick={() => setShowCreateDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar Projeto
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Create Project Dialog */}
         <CreateProjectDialog
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
-          onCreateProject={createProject}
+          onSubmit={handleCreateProject}
         />
       </div>
     </div>

@@ -1,0 +1,724 @@
+config:
+  target: 'http://localhost:5173'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up phase"
+    - duration: 120
+      arrivalRate: 10
+      name: "Ramp up phase"
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained load phase"
+    - duration: 60
+      arrivalRate: 5
+      name: "Cool down phase"
+  defaults:
+    headers:
+      Content-Type: 'application/json'
+  processor: './load-test-processor.js'
+
+scenarios:
+  - name: "Dashboard Load Test"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+            - contentType: "text/html"
+      - think: 2
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+
+  - name: "Projects CRUD Test"
+    weight: 40
+    flow:
+      - get:
+          url: "/projetos"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/projects"
+          json:
+            name: "Projeto Teste {{ $randomString() }}"
+            description: "Descrição do projeto teste"
+            status: "ideacao"
+            priority: 3
+            methodology: "kanban"
+            complexity_score: 5
+            estimated_roi: 25000
+            created_by: "test-user"
+          expect:
+            - statusCode: 201
+      - think: 1
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - put:
+          url: "/api/projects/{{ projectId }}"
+          json:
+            status: "desenvolvimento"
+          expect:
+            - statusCode: 200
+
+  - name: "Kanban Operations Test"
+    weight: 20
+    flow:
+      - get:
+          url: "/projetos"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/projects/{{ projectId }}/move"
+          json:
+            fromStatus: "ideacao"
+            toStatus: "planejamento"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+
+  - name: "Search and Filter Test"
+    weight: 10
+    flow:
+      - get:
+          url: "/projetos?search=automação"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/projetos?status=desenvolvimento"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/projetos?priority=high"
+          expect:
+            - statusCode: 200
+
+  - name: "Quality Gates Test"
+    weight: 10
+    flow:
+      - get:
+          url: "/quality-gates"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/quality-gates/approve"
+          json:
+            projectId: "{{ projectId }}"
+            gate: "G1"
+            approved: true
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/quality-gates/{{ projectId }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Chat IA Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/chat"
+          expect:
+            - statusCode: 200
+      - think: 2
+      - post:
+          url: "/api/chat"
+          json:
+            message: "Como criar um projeto RPA?"
+            context: "project_creation"
+          expect:
+            - statusCode: 200
+      - think: 3
+
+  - name: "Deployments Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/deployments"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/deployments"
+          json:
+            projectId: "{{ projectId }}"
+            environment: "production"
+            version: "1.0.0"
+          expect:
+            - statusCode: 201
+      - think: 2
+      - get:
+          url: "/api/deployments/{{ deploymentId }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Navigation Test"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/projetos"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/chat"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/quality-gates"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/deployments"
+          expect:
+            - statusCode: 200
+
+  - name: "API Health Check"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+      - think: 1
+      - get:
+          url: "/api/status"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/metrics"
+          expect:
+            - statusCode: 200
+
+  - name: "Error Handling Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/nonexistent"
+          expect:
+            - statusCode: 404
+      - think: 1
+      - post:
+          url: "/api/projects"
+          json:
+            invalid: "data"
+          expect:
+            - statusCode: 400
+      - think: 1
+      - get:
+          url: "/api/projects/invalid-id"
+          expect:
+            - statusCode: 404
+
+  - name: "Performance Monitoring"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/performance"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/memory"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/cpu"
+          expect:
+            - statusCode: 200
+
+  - name: "Database Operations Test"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/projects"
+          json:
+            name: "DB Test Project {{ $randomString() }}"
+            description: "Teste de operações de banco"
+            status: "ideacao"
+            priority: 2
+            methodology: "waterfall"
+            complexity_score: 3
+            estimated_roi: 15000
+            created_by: "db-test-user"
+          expect:
+            - statusCode: 201
+      - think: 1
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - put:
+          url: "/api/projects/{{ projectId }}"
+          json:
+            status: "planejamento"
+            priority: 4
+          expect:
+            - statusCode: 200
+      - think: 1
+      - delete:
+          url: "/api/projects/{{ projectId }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Concurrent Users Test"
+    weight: 10
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/projetos"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/projects"
+          json:
+            name: "Concurrent Test {{ $randomString() }}"
+            description: "Teste de usuários concorrentes"
+            status: "ideacao"
+            priority: 1
+            methodology: "agile"
+            complexity_score: 4
+            estimated_roi: 20000
+            created_by: "concurrent-user-{{ $randomNumber(1, 100) }}"
+          expect:
+            - statusCode: 201
+      - think: 2
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+
+  - name: "Memory Leak Test"
+    weight: 5
+    flow:
+      - loop:
+          - get:
+              url: "/projetos"
+              expect:
+                - statusCode: 200
+          - think: 1
+          - post:
+              url: "/api/projects"
+              json:
+                name: "Memory Test {{ $randomString() }}"
+                description: "Teste de vazamento de memória"
+                status: "ideacao"
+                priority: 1
+                methodology: "kanban"
+                complexity_score: 2
+                estimated_roi: 5000
+                created_by: "memory-test"
+              expect:
+                - statusCode: 201
+          - think: 1
+          - delete:
+              url: "/api/projects/{{ projectId }}"
+              expect:
+                - statusCode: 200
+          - think: 1
+        count: 10
+
+  - name: "Session Management Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "testuser"
+            password: "testpass"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/auth/logout"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 401
+
+  - name: "File Upload Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/projetos"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/projects/{{ projectId }}/attachments"
+          form:
+            file: "test-document.pdf"
+            description: "Documento de teste"
+          expect:
+            - statusCode: 201
+      - think: 1
+      - get:
+          url: "/api/projects/{{ projectId }}/attachments"
+          expect:
+            - statusCode: 200
+
+  - name: "Real-time Updates Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/projetos"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/projects/{{ projectId }}/subscribe"
+          expect:
+            - statusCode: 200
+      - think: 5
+      - put:
+          url: "/api/projects/{{ projectId }}"
+          json:
+            status: "desenvolvimento"
+          expect:
+            - statusCode: 200
+      - think: 2
+      - post:
+          url: "/api/projects/{{ projectId }}/unsubscribe"
+          expect:
+            - statusCode: 200
+
+  - name: "Export Data Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/projects/export"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+      - think: 1
+      - get:
+          url: "/api/projects/export?format=csv"
+          expect:
+            - statusCode: 200
+            - contentType: "text/csv"
+      - think: 1
+      - get:
+          url: "/api/projects/export?format=excel"
+          expect:
+            - statusCode: 200
+            - contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+  - name: "Backup and Recovery Test"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/backup/create"
+          expect:
+            - statusCode: 200
+      - think: 2
+      - get:
+          url: "/api/backup/status"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/backup/restore"
+          json:
+            backupId: "{{ backupId }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Security Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/admin/users"
+          expect:
+            - statusCode: 403
+      - think: 1
+      - post:
+          url: "/api/projects"
+          json:
+            name: "<script>alert('xss')</script>"
+          expect:
+            - statusCode: 400
+      - think: 1
+      - post:
+          url: "/api/auth/login"
+          json:
+            username: "admin' OR '1'='1"
+            password: "password"
+          expect:
+            - statusCode: 401
+
+  - name: "Load Balancer Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/load-balancer/status"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/load-balancer/health-check"
+          expect:
+            - statusCode: 200
+
+  - name: "Cache Performance Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/cache/clear"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+
+  - name: "Database Connection Pool Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/db/status"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/db/connections"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/db/test-connection"
+          expect:
+            - statusCode: 200
+
+  - name: "API Rate Limiting Test"
+    weight: 5
+    flow:
+      - loop:
+          - get:
+              url: "/api/projects"
+              expect:
+                - statusCode: 200
+          - think: 0.1
+        count: 50
+      - think: 1
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 429
+
+  - name: "WebSocket Connection Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/websocket/connect"
+          expect:
+            - statusCode: 200
+      - think: 5
+      - post:
+          url: "/api/websocket/message"
+          json:
+            type: "project_update"
+            data: { projectId: "{{ projectId }}", status: "completed" }
+          expect:
+            - statusCode: 200
+      - think: 2
+      - get:
+          url: "/api/websocket/disconnect"
+          expect:
+            - statusCode: 200
+
+  - name: "Background Job Test"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/jobs/schedule"
+          json:
+            type: "data_cleanup"
+            schedule: "daily"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/jobs/status"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/jobs/trigger"
+          json:
+            jobId: "{{ jobId }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Notification System Test"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/notifications/send"
+          json:
+            type: "project_created"
+            userId: "test-user"
+            data: { projectId: "{{ projectId }}" }
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/notifications/user/test-user"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/notifications/mark-read"
+          json:
+            notificationId: "{{ notificationId }}"
+          expect:
+            - statusCode: 200
+
+  - name: "Analytics and Reporting Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/analytics/projects"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/analytics/performance"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/analytics/roi"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/reports/generate"
+          json:
+            type: "monthly_summary"
+            date: "2024-01"
+          expect:
+            - statusCode: 200
+
+  - name: "Integration Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/integrations/git/status"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/integrations/docker/status"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/integrations/n8n/status"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/integrations/sync"
+          json:
+            source: "git"
+            target: "milapp"
+          expect:
+            - statusCode: 200
+
+  - name: "Final Cleanup Test"
+    weight: 5
+    flow:
+      - get:
+          url: "/api/projects"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - delete:
+          url: "/api/projects/{{ projectId }}"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/cleanup/temp-files"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - post:
+          url: "/api/cleanup/sessions"
+          expect:
+            - statusCode: 200
+      - think: 1
+      - get:
+          url: "/api/health"
+          expect:
+            - statusCode: 200 

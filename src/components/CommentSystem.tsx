@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-interface Comment {
+export interface Comment {
   id: string;
   content: string;
   author: string;
@@ -31,7 +31,7 @@ interface Comment {
   replies?: Comment[];
 }
 
-interface CommentSystemProps {
+export interface CommentSystemProps {
   comments: Comment[];
   onAddComment: (comment: {
     content: string;
@@ -50,14 +50,14 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
   onDeleteComment,
   currentUser,
 }) => {
-  const [newComment, setNewComment] = useState("");
+  const [newComment, setNewComment] = useState<string>("");
   const [commentType, setCommentType] = useState<'comment' | 'update' | 'blocker' | 'solution'>('comment');
   const [editingComment, setEditingComment] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState("");
+  const [editContent, setEditContent] = useState<string>("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replyContent, setReplyContent] = useState("");
+  const [replyContent, setReplyContent] = useState<string>("");
 
-  const handleSubmitComment = () => {
+  const handleSubmitComment = (): void => {
     if (newComment.trim()) {
       onAddComment({
         content: newComment,
@@ -68,15 +68,15 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
     }
   };
 
-  const handleEditComment = (commentId: string) => {
-    const comment = comments.find(c => c.id === commentId);
+  const handleEditComment = (commentId: string): void => {
+    const comment = comments.find((c: Comment) => c.id === commentId);
     if (comment) {
       setEditContent(comment.content);
       setEditingComment(commentId);
     }
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = (): void => {
     if (editingComment && editContent.trim()) {
       onEditComment(editingComment, editContent);
       setEditingComment(null);
@@ -84,11 +84,11 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
     }
   };
 
-  const handleReply = (commentId: string) => {
+  const handleReply = (commentId: string): void => {
     setReplyingTo(commentId);
   };
 
-  const handleSubmitReply = () => {
+  const handleSubmitReply = (): void => {
     if (replyingTo && replyContent.trim()) {
       onAddComment({
         content: replyContent,
@@ -100,7 +100,7 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
     }
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string): React.ReactElement => {
     switch (type) {
       case 'update':
         return <Edit className="h-4 w-4 text-blue-600" />;
@@ -113,7 +113,7 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getTypeColor = (type: string): string => {
     switch (type) {
       case 'update':
         return 'bg-blue-100 text-blue-800';
@@ -126,7 +126,7 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
@@ -146,13 +146,13 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
     }
   };
 
-  const renderComment = (comment: Comment, isReply = false) => (
+  const renderComment = (comment: Comment, isReply = false): React.ReactElement => (
     <div key={comment.id} className={`${isReply ? 'ml-8 border-l-2 border-gray-200 pl-4' : ''}`}>
       <div className="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
         <Avatar className="h-8 w-8">
-          <AvatarImage src={comment.author_avatar} />
+          <AvatarImage src={comment.author_avatar} alt={comment.author} />
           <AvatarFallback>
-            {comment.author.split(' ').map(n => n[0]).join('')}
+            {comment.author.split(' ').map((n: string) => n[0]).join('')}
           </AvatarFallback>
         </Avatar>
         
@@ -176,7 +176,7 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
             <div className="space-y-2">
               <Textarea
                 value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditContent(e.target.value)}
                 rows={3}
                 className="resize-none"
               />
@@ -246,7 +246,7 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
         <div className="ml-8 mt-3 p-3 bg-gray-50 rounded-lg">
           <Textarea
             value={replyContent}
-            onChange={(e) => setReplyContent(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setReplyContent(e.target.value)}
             placeholder="Escreva sua resposta..."
             rows={2}
             className="resize-none mb-2"
@@ -269,7 +269,7 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
       {/* Replies */}
       {comment.replies && comment.replies.length > 0 && (
         <div className="mt-2">
-          {comment.replies.map(reply => renderComment(reply, true))}
+          {comment.replies.map((reply: Comment) => renderComment(reply, true))}
         </div>
       )}
     </div>
@@ -320,7 +320,7 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
           
           <Textarea
             value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)}
             placeholder={`Adicione um ${commentType}...`}
             rows={3}
             className="resize-none"
@@ -335,12 +335,6 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
           </div>
         </div>
 
-        {/* Separator */}
-        {/* Assuming Separator is imported from @/components/ui/separator */}
-        {/* If not, you might need to import it or define it locally */}
-        {/* For now, I'll assume it's available or will be added */}
-        {/* <Separator /> */}
-
         {/* Comments List */}
         <div className="space-y-2">
           {comments.length === 0 ? (
@@ -350,7 +344,7 @@ const CommentSystem: React.FC<CommentSystemProps> = ({
               <p className="text-sm">Seja o primeiro a comentar!</p>
             </div>
           ) : (
-            comments.map(comment => renderComment(comment))
+            comments.map((comment: Comment) => renderComment(comment))
           )}
         </div>
       </CardContent>

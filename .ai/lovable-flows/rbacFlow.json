@@ -1,0 +1,457 @@
+{
+  "flowId": "rbac-flow",
+  "name": "Controle de Acesso Baseado em Roles (RBAC)",
+  "description": "Fluxo automatizado para gerenciamento de permissões e controle de acesso",
+  "version": "1.0.0",
+  "createdAt": "2025-01-18T23:47:00.000Z",
+  "author": "MilApp Builder Team",
+  "tags": ["security", "rbac", "permissions", "access-control"],
+  
+  "triggers": [
+    {
+      "type": "api",
+      "name": "Validate Permissions",
+      "description": "Iniciado via API POST /api/auth/validate-permissions"
+    },
+    {
+      "type": "event",
+      "name": "User Role Changed",
+      "description": "Iniciado quando role do usuário é alterada"
+    },
+    {
+      "type": "scheduled",
+      "name": "Permission Audit",
+      "description": "Executado diariamente para auditoria de permissões"
+    }
+  ],
+  
+  "steps": [
+    {
+      "id": "step-1",
+      "name": "Autenticação do Usuário",
+      "type": "auth",
+      "description": "Verificar autenticação e extrair informações do usuário",
+      "config": {
+        "validateToken": true,
+        "extractUserInfo": true,
+        "checkSession": true
+      },
+      "outputs": {
+        "success": "step-2",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-2",
+      "name": "Carregamento de Perfil",
+      "type": "database",
+      "description": "Carregar perfil completo do usuário",
+      "config": {
+        "table": "users",
+        "operation": "select",
+        "joins": [
+          {
+            "table": "team_members",
+            "type": "left",
+            "condition": "users.id = team_members.user_id"
+          },
+          {
+            "table": "teams",
+            "type": "left",
+            "condition": "team_members.team_id = teams.id"
+          }
+        ],
+        "fields": [
+          "users.id",
+          "users.email",
+          "users.role",
+          "users.is_active",
+          "users.created_at",
+          "team_members.team_id",
+          "team_members.role as team_role",
+          "teams.name as team_name"
+        ]
+      },
+      "outputs": {
+        "success": "step-3",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-3",
+      "name": "Validação de Status",
+      "type": "validation",
+      "description": "Verificar se o usuário está ativo e habilitado",
+      "config": {
+        "checks": [
+          {
+            "field": "is_active",
+            "condition": "equals",
+            "value": true,
+            "errorCode": "USER_INACTIVE"
+          },
+          {
+            "field": "role",
+            "condition": "not_equals",
+            "value": "suspended",
+            "errorCode": "USER_SUSPENDED"
+          }
+        ]
+      },
+      "outputs": {
+        "success": "step-4",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-4",
+      "name": "Carregamento de Permissões",
+      "type": "cache",
+      "description": "Carregar permissões do cache ou banco de dados",
+      "config": {
+        "cacheKey": "permissions:{{user.id}}",
+        "ttl": 300,
+        "fallback": {
+          "type": "database",
+          "query": "SELECT * FROM user_permissions WHERE user_id = {{user.id}}"
+        }
+      },
+      "outputs": {
+        "success": "step-5",
+        "error": "step-5"
+      }
+    },
+    
+    {
+      "id": "step-5",
+      "name": "Validação de Recursos",
+      "type": "validation",
+      "description": "Validar acesso aos recursos específicos",
+      "config": {
+        "resourceValidation": {
+          "projects": {
+            "table": "projects",
+            "conditions": [
+              "created_by = {{user.id}}",
+              "team_id IN (SELECT team_id FROM team_members WHERE user_id = {{user.id}} AND status = 'active')"
+            ]
+          },
+          "pipelines": {
+            "table": "project_pipelines",
+            "conditions": [
+              "project_id IN (SELECT id FROM projects WHERE created_by = {{user.id}} OR team_id IN (SELECT team_id FROM team_members WHERE user_id = {{user.id}}))"
+            ]
+          },
+          "environments": {
+            "table": "environments",
+            "conditions": [
+              "is_public = true",
+              "team_id IN (SELECT team_id FROM team_members WHERE user_id = {{user.id}})"
+            ]
+          }
+        }
+      },
+      "outputs": {
+        "success": "step-6",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-6",
+      "name": "Aplicação de Políticas",
+      "type": "policy",
+      "description": "Aplicar políticas de acesso baseadas no role",
+      "config": {
+        "policies": {
+          "admin": {
+            "permissions": ["*"],
+            "resources": ["*"],
+            "actions": ["*"]
+          },
+          "gestor": {
+            "permissions": [
+              "projects:read",
+              "projects:write",
+              "projects:delete",
+              "pipelines:read",
+              "pipelines:write",
+              "users:read",
+              "teams:read",
+              "teams:write"
+            ],
+            "scope": "team"
+          },
+          "dev": {
+            "permissions": [
+              "projects:read",
+              "projects:write",
+              "pipelines:read",
+              "pipelines:write",
+              "tasks:read",
+              "tasks:write"
+            ],
+            "scope": "assigned"
+          },
+          "analista": {
+            "permissions": [
+              "projects:read",
+              "pipelines:read",
+              "reports:read",
+              "analytics:read"
+            ],
+            "scope": "readonly"
+          },
+          "ia": {
+            "permissions": [
+              "public_data:read",
+              "analytics:read"
+            ],
+            "scope": "public"
+          }
+        }
+      },
+      "outputs": {
+        "success": "step-7",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-7",
+      "name": "Verificação de Propriedade",
+      "type": "ownership",
+      "description": "Verificar propriedade de recursos específicos",
+      "config": {
+        "ownershipChecks": {
+          "projects": {
+            "field": "created_by",
+            "fallback": "team_ownership"
+          },
+          "pipelines": {
+            "field": "created_by",
+            "fallback": "project_ownership"
+          },
+          "tasks": {
+            "field": "assigned_to",
+            "fallback": "project_ownership"
+          }
+        }
+      },
+      "outputs": {
+        "success": "step-8",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-8",
+      "name": "Geração de Token de Acesso",
+      "type": "token",
+      "description": "Gerar token de acesso com permissões específicas",
+      "config": {
+        "tokenType": "access_token",
+        "expiresIn": "1h",
+        "claims": {
+          "user_id": "{{user.id}}",
+          "role": "{{user.role}}",
+          "team_id": "{{user.team_id}}",
+          "permissions": "{{permissions}}",
+          "scope": "{{scope}}"
+        }
+      },
+      "outputs": {
+        "success": "step-9",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-9",
+      "name": "Log de Acesso",
+      "type": "audit",
+      "description": "Registrar log de acesso para auditoria",
+      "config": {
+        "event": "access_granted",
+        "data": {
+          "user_id": "{{user.id}}",
+          "user_email": "{{user.email}}",
+          "role": "{{user.role}}",
+          "team_id": "{{user.team_id}}",
+          "permissions": "{{permissions}}",
+          "resources": "{{requested_resources}}",
+          "timestamp": "{{timestamp}}",
+          "ip_address": "{{client_ip}}",
+          "user_agent": "{{user_agent}}"
+        }
+      },
+      "outputs": {
+        "success": "step-success",
+        "error": "step-success"
+      }
+    },
+    
+    {
+      "id": "step-success",
+      "name": "Resposta de Sucesso",
+      "type": "response",
+      "description": "Retornar permissões e token de acesso",
+      "config": {
+        "status": 200,
+        "data": {
+          "user": {
+            "id": "{{user.id}}",
+            "email": "{{user.email}}",
+            "role": "{{user.role}}",
+            "team_id": "{{user.team_id}}",
+            "team_name": "{{user.team_name}}"
+          },
+          "permissions": "{{permissions}}",
+          "access_token": "{{access_token}}",
+          "expires_at": "{{token_expires_at}}",
+          "scope": "{{scope}}"
+        }
+      }
+    },
+    
+    {
+      "id": "step-error",
+      "name": "Resposta de Erro",
+      "type": "response",
+      "description": "Retornar erro de acesso negado",
+      "config": {
+        "status": 403,
+        "error": {
+          "code": "ACCESS_DENIED",
+          "message": "Acesso negado",
+          "details": {
+            "reason": "{{error.reason}}",
+            "required_permissions": "{{error.required_permissions}}",
+            "user_permissions": "{{error.user_permissions}}"
+          }
+        }
+      }
+    }
+  ],
+  
+  "variables": {
+    "default_permissions": {
+      "admin": ["*"],
+      "gestor": [
+        "projects:read",
+        "projects:write",
+        "projects:delete",
+        "pipelines:read",
+        "pipelines:write",
+        "users:read",
+        "teams:read",
+        "teams:write"
+      ],
+      "dev": [
+        "projects:read",
+        "projects:write",
+        "pipelines:read",
+        "pipelines:write",
+        "tasks:read",
+        "tasks:write"
+      ],
+      "analista": [
+        "projects:read",
+        "pipelines:read",
+        "reports:read",
+        "analytics:read"
+      ],
+      "ia": [
+        "public_data:read",
+        "analytics:read"
+      ]
+    }
+  },
+  
+  "errorHandling": {
+    "retryPolicy": {
+      "maxRetries": 2,
+      "backoffMultiplier": 1.5,
+      "initialDelay": 500
+    },
+    "fallbackActions": [
+      {
+        "condition": "step-4.error",
+        "action": "load_permissions_from_db"
+      },
+      {
+        "condition": "step-6.error",
+        "action": "apply_default_permissions"
+      }
+    ]
+  },
+  
+  "monitoring": {
+    "metrics": [
+      "authentication_time",
+      "permission_validation_time",
+      "cache_hit_rate",
+      "access_denied_count",
+      "token_generation_time"
+    ],
+    "alerts": [
+      {
+        "condition": "access_denied_count > 10",
+        "action": "security_alert"
+      },
+      {
+        "condition": "authentication_time > 5000",
+        "action": "performance_alert"
+      }
+    ]
+  },
+  
+  "security": {
+    "rateLimiting": {
+      "requests": 100,
+      "window": "1m"
+    },
+    "tokenSecurity": {
+      "algorithm": "RS256",
+      "keyRotation": "7d",
+      "blacklistEnabled": true
+    },
+    "auditLogging": {
+      "enabled": true,
+      "retention": "1y",
+      "sensitiveFields": ["password", "token"]
+    }
+  },
+  
+  "documentation": {
+    "usage": "Este fluxo é usado para validar permissões e controlar acesso aos recursos",
+    "prerequisites": [
+      "Usuário autenticado",
+      "Token JWT válido",
+      "Recursos solicitados"
+    ],
+    "examples": {
+      "input": {
+        "resources": [
+          {
+            "type": "projects",
+            "action": "read",
+            "resource_id": "uuid-do-projeto"
+          },
+          {
+            "type": "pipelines",
+            "action": "write"
+          }
+        ]
+      },
+      "output": {
+        "permissions": ["projects:read", "pipelines:write"],
+        "access_token": "jwt-token",
+        "expires_at": "2025-01-18T23:47:00.000Z"
+      }
+    }
+  }
+} 

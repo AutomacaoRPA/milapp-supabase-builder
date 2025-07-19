@@ -1,0 +1,341 @@
+{
+  "flowId": "novo-projeto",
+  "name": "Criação de Novo Projeto",
+  "description": "Fluxo automatizado para criação de projetos no MilApp Builder",
+  "version": "1.0.0",
+  "createdAt": "2025-01-18T23:47:00.000Z",
+  "author": "MilApp Builder Team",
+  "tags": ["project", "creation", "automation"],
+  
+  "triggers": [
+    {
+      "type": "manual",
+      "name": "Criar Projeto",
+      "description": "Iniciado manualmente pelo usuário"
+    },
+    {
+      "type": "api",
+      "name": "API Call",
+      "description": "Iniciado via API POST /api/projects"
+    }
+  ],
+  
+  "steps": [
+    {
+      "id": "step-1",
+      "name": "Validação de Entrada",
+      "type": "validation",
+      "description": "Validar dados de entrada do projeto",
+      "config": {
+        "schema": "CreateProjectSchema",
+        "requiredFields": ["name", "type", "priority"],
+        "validationRules": {
+          "name": {
+            "minLength": 1,
+            "maxLength": 255,
+            "pattern": "^[a-zA-Z0-9\\s\\-_]+$"
+          },
+          "type": {
+            "enum": ["automation", "enhancement", "maintenance", "migration", "integration"]
+          },
+          "priority": {
+            "enum": ["low", "medium", "high", "critical"]
+          }
+        }
+      },
+      "outputs": {
+        "success": "step-2",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-2",
+      "name": "Verificação de Permissões",
+      "type": "auth",
+      "description": "Verificar se o usuário tem permissão para criar projetos",
+      "config": {
+        "requiredRole": ["admin", "gestor"],
+        "checkTeamMembership": true,
+        "validateOwnership": false
+      },
+      "outputs": {
+        "success": "step-3",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-3",
+      "name": "Criação do Projeto",
+      "type": "database",
+      "description": "Criar registro do projeto no banco de dados",
+      "config": {
+        "table": "projects",
+        "operation": "insert",
+        "dataMapping": {
+          "name": "{{input.name}}",
+          "description": "{{input.description}}",
+          "type": "{{input.type}}",
+          "priority": "{{input.priority}}",
+          "methodology": "{{input.methodology || 'scrum'}}",
+          "created_by": "{{user.id}}",
+          "team_id": "{{user.team_id}}",
+          "status": "pending",
+          "created_at": "{{timestamp}}",
+          "updated_at": "{{timestamp}}"
+        }
+      },
+      "outputs": {
+        "success": "step-4",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-4",
+      "name": "Geração de Pipeline",
+      "type": "automation",
+      "description": "Criar pipeline automatizado para o projeto",
+      "config": {
+        "template": "default-pipeline",
+        "customization": {
+          "stages": "{{input.pipeline_config.stages || default_stages}}",
+          "settings": "{{input.pipeline_config.settings || default_settings}}"
+        },
+        "dataMapping": {
+          "project_id": "{{step-3.output.id}}",
+          "name": "Pipeline Principal",
+          "type": "ci_cd",
+          "config": "{{pipeline_config}}",
+          "created_by": "{{user.id}}"
+        }
+      },
+      "outputs": {
+        "success": "step-5",
+        "error": "step-6"
+      }
+    },
+    
+    {
+      "id": "step-5",
+      "name": "Configuração de Ambiente",
+      "type": "automation",
+      "description": "Configurar ambientes de desenvolvimento",
+      "config": {
+        "environments": [
+          {
+            "name": "development",
+            "type": "dev",
+            "auto_create": true
+          },
+          {
+            "name": "staging",
+            "type": "staging",
+            "auto_create": false
+          }
+        ]
+      },
+      "outputs": {
+        "success": "step-7",
+        "error": "step-6"
+      }
+    },
+    
+    {
+      "id": "step-6",
+      "name": "Rollback Parcial",
+      "type": "cleanup",
+      "description": "Reverter criação do projeto em caso de erro",
+      "config": {
+        "operations": [
+          {
+            "type": "delete",
+            "table": "projects",
+            "condition": "id = {{step-3.output.id}}"
+          }
+        ]
+      },
+      "outputs": {
+        "success": "step-error",
+        "error": "step-error"
+      }
+    },
+    
+    {
+      "id": "step-7",
+      "name": "Notificações",
+      "type": "notification",
+      "description": "Enviar notificações sobre criação do projeto",
+      "config": {
+        "channels": [
+          {
+            "type": "email",
+            "template": "project-created",
+            "recipients": ["{{user.email}}", "{{team.manager_email}}"]
+          },
+          {
+            "type": "slack",
+            "channel": "#projects",
+            "template": "project-created-slack"
+          }
+        ],
+        "data": {
+          "project_name": "{{step-3.output.name}}",
+          "project_id": "{{step-3.output.id}}",
+          "created_by": "{{user.name}}",
+          "team_name": "{{team.name}}"
+        }
+      },
+      "outputs": {
+        "success": "step-8",
+        "error": "step-8"
+      }
+    },
+    
+    {
+      "id": "step-8",
+      "name": "Log de Auditoria",
+      "type": "audit",
+      "description": "Registrar evento de criação do projeto",
+      "config": {
+        "event": "project_created",
+        "data": {
+          "project_id": "{{step-3.output.id}}",
+          "user_id": "{{user.id}}",
+          "timestamp": "{{timestamp}}",
+          "metadata": {
+            "pipeline_created": "{{step-4.success}}",
+            "environments_created": "{{step-5.success}}"
+          }
+        }
+      },
+      "outputs": {
+        "success": "step-success",
+        "error": "step-success"
+      }
+    },
+    
+    {
+      "id": "step-success",
+      "name": "Sucesso",
+      "type": "response",
+      "description": "Retornar resposta de sucesso",
+      "config": {
+        "status": 201,
+        "data": {
+          "project": "{{step-3.output}}",
+          "pipeline": "{{step-4.output}}",
+          "environments": "{{step-5.output}}",
+          "message": "Projeto criado com sucesso"
+        }
+      }
+    },
+    
+    {
+      "id": "step-error",
+      "name": "Erro",
+      "type": "response",
+      "description": "Retornar resposta de erro",
+      "config": {
+        "status": 400,
+        "error": {
+          "code": "PROJECT_CREATION_FAILED",
+          "message": "Falha ao criar projeto",
+          "details": "{{error.details}}"
+        }
+      }
+    }
+  ],
+  
+  "variables": {
+    "default_stages": [
+      {
+        "name": "development",
+        "order": 1,
+        "auto_approve": false
+      },
+      {
+        "name": "testing",
+        "order": 2,
+        "auto_approve": false
+      },
+      {
+        "name": "staging",
+        "order": 3,
+        "auto_approve": false
+      },
+      {
+        "name": "production",
+        "order": 4,
+        "auto_approve": false
+      }
+    ],
+    "default_settings": {
+      "require_approval": true,
+      "auto_deploy_dev": true,
+      "notifications": {
+        "slack": false,
+        "email": true,
+        "webhook": false
+      }
+    }
+  },
+  
+  "errorHandling": {
+    "retryPolicy": {
+      "maxRetries": 3,
+      "backoffMultiplier": 2,
+      "initialDelay": 1000
+    },
+    "fallbackActions": [
+      {
+        "condition": "step-4.error",
+        "action": "step-6"
+      }
+    ]
+  },
+  
+  "monitoring": {
+    "metrics": [
+      "execution_time",
+      "success_rate",
+      "error_count",
+      "user_satisfaction"
+    ],
+    "alerts": [
+      {
+        "condition": "execution_time > 30000",
+        "action": "notify_team"
+      },
+      {
+        "condition": "error_count > 5",
+        "action": "pause_flow"
+      }
+    ]
+  },
+  
+  "documentation": {
+    "usage": "Este fluxo é usado para criar novos projetos no sistema MilApp Builder",
+    "prerequisites": [
+      "Usuário autenticado",
+      "Permissão de criação de projetos",
+      "Dados válidos do projeto"
+    ],
+    "examples": {
+      "input": {
+        "name": "Automação de Processos",
+        "description": "Sistema de automação para processos internos",
+        "type": "automation",
+        "priority": "high",
+        "methodology": "scrum",
+        "pipeline_config": {
+          "stages": [
+            {"name": "dev", "order": 1, "auto_approve": true},
+            {"name": "test", "order": 2, "auto_approve": false}
+          ]
+        }
+      }
+    }
+  }
+} 

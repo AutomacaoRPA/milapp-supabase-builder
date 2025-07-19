@@ -1,400 +1,596 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Task {
   id: string;
+  project_id: string; // ✅ VINCULADO AO PROJETO
   title: string;
-  description: string;
-  status: 'backlog' | 'todo' | 'in_progress' | 'testing' | 'done';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  assigned_to: string;
-  story_points: number;
-  estimated_hours: number;
-  actual_hours: number;
-  start_date: string;
-  end_date: string;
+  description: string | null;
+  status: "backlog" | "to_do" | "in_progress" | "review" | "done" | "blocked";
+  priority: "low" | "medium" | "high" | "critical";
+  type: "feature" | "bug" | "task" | "story" | "epic";
+  assignee_id: string | null;
+  reporter_id: string;
+  estimated_hours: number | null;
+  actual_hours: number | null;
+  story_points: number | null;
+  sprint_id: string | null;
+  due_date: string | null;
   created_at: string;
   updated_at: string;
-  attachments: Attachment[];
+  tags: string[];
+  attachments: string[];
   comments: Comment[];
-  time_logs: TimeLog[];
-  column_transitions: ColumnTransition[];
-}
-
-export interface Attachment {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  url: string;
-  uploaded_by: string;
-  uploaded_at: string;
-  description?: string;
 }
 
 export interface Comment {
   id: string;
+  task_id: string;
+  user_id: string;
   content: string;
-  author: string;
-  author_avatar?: string;
   created_at: string;
-  type: 'comment' | 'update' | 'blocker' | 'solution';
-  parent_id?: string;
-  replies?: Comment[];
+  updated_at: string;
 }
 
-export interface TimeLog {
+export interface Sprint {
   id: string;
-  user_id: string;
-  task_id: string;
-  start_time: string;
-  end_time: string;
-  duration: number; // em minutos
-  description: string;
-  activity_type: 'development' | 'testing' | 'review' | 'meeting' | 'research' | 'documentation' | 'debugging';
-}
-
-export interface ColumnTransition {
-  id: string;
-  task_id: string;
-  from_column: string;
-  to_column: string;
-  transition_date: string;
-  user_id: string;
-  notes?: string;
-}
-
-export interface TaskFilters {
-  status?: string[];
-  priority?: string[];
-  assigned_to?: string[];
-  story_points?: number[];
-  date_range?: {
-    start: string;
-    end: string;
-  };
-}
-
-export interface TaskMetrics {
-  total_tasks: number;
-  completed_tasks: number;
-  in_progress_tasks: number;
-  blocked_tasks: number;
-  average_cycle_time: number;
-  average_lead_time: number;
-  velocity: number;
-  burndown_data: BurndownPoint[];
-}
-
-export interface BurndownPoint {
-  date: string;
-  remaining_points: number;
-  ideal_points: number;
+  project_id: string; // ✅ VINCULADO AO PROJETO
+  name: string;
+  description: string | null;
+  start_date: string;
+  end_date: string;
+  status: "planning" | "active" | "completed" | "cancelled";
+  goal: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useTaskManagement = (projectId: string) => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filters, setFilters] = useState<TaskFilters>({});
+  const { toast } = useToast();
 
-  // Carregar tasks do projeto
-  const loadTasks = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // Buscar tasks do projeto específico
+  const fetchTasks = async () => {
     try {
-      // Aqui você faria a chamada para a API
-      const response = await fetch(`/api/projects/${projectId}/tasks`);
-      const data = await response.json();
-      setTasks(data);
-    } catch (err) {
-      setError('Erro ao carregar tasks');
-      console.error('Erro ao carregar tasks:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
+      setLoading(true);
+      setError(null);
 
-  // Criar nova task
-  const createTask = useCallback(async (taskData: Partial<Task>) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/projects/${projectId}/tasks`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { data, error: supabaseError } = await supabase
+        .from("tasks")
+        .select(`
+          *,
+          comments (*)
+        `)
+        .eq("project_id", projectId) // ✅ FILTRAR POR PROJETO
+        .order("created_at", { ascending: false });
+
+      if (supabaseError) {
+        console.error("Erro Supabase:", supabaseError);
+        throw new Error(supabaseError.message);
+      }
+
+      setTasks(data || []);
+      console.log(`Tasks carregadas para projeto ${projectId}:`, data?.length || 0);
+
+    } catch (error) {
+      console.error("Erro ao buscar tasks:", error);
+      setError(error instanceof Error ? error.message : "Erro desconhecido");
+
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar as tasks do projeto",
+        variant: "destructive",
+      });
+
+      // Dados mock para desenvolvimento
+      setTasks([
+        {
+          id: "1",
+          project_id: projectId,
+          title: "Implementar autenticação",
+          description: "Criar sistema de login e registro",
+          status: "in_progress",
+          priority: "high",
+          type: "feature",
+          assignee_id: "user-1",
+          reporter_id: "user-2",
+          estimated_hours: 8,
+          actual_hours: 4,
+          story_points: 5,
+          sprint_id: "sprint-1",
+          due_date: "2024-02-15",
+          created_at: "2024-01-15T10:00:00Z",
+          updated_at: "2024-01-20T14:30:00Z",
+          tags: ["auth", "security"],
+          attachments: [],
+          comments: []
         },
-        body: JSON.stringify(taskData),
-      });
-      const newTask = await response.json();
-      setTasks(prev => [...prev, newTask]);
-      return newTask;
-    } catch (err) {
-      setError('Erro ao criar task');
-      console.error('Erro ao criar task:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
-
-  // Atualizar task
-  const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/projects/${projectId}/tasks/${taskId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      });
-      const updatedTask = await response.json();
-      setTasks(prev => prev.map(task => 
-        task.id === taskId ? { ...task, ...updatedTask } : task
-      ));
-      return updatedTask;
-    } catch (err) {
-      setError('Erro ao atualizar task');
-      console.error('Erro ao atualizar task:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
-
-  // Mover task entre colunas
-  const moveTask = useCallback(async (taskId: string, newStatus: Task['status'], notes?: string) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    const transition: ColumnTransition = {
-      id: Date.now().toString(),
-      task_id: taskId,
-      from_column: task.status,
-      to_column: newStatus,
-      transition_date: new Date().toISOString(),
-      user_id: 'current-user-id', // Você obteria isso do contexto de autenticação
-      notes,
-    };
-
-    try {
-      await updateTask(taskId, { 
-        status: newStatus,
-        column_transitions: [...(task.column_transitions || []), transition]
-      });
-    } catch (err) {
-      console.error('Erro ao mover task:', err);
-      throw err;
-    }
-  }, [tasks, updateTask]);
-
-  // Log de tempo
-  const logTime = useCallback(async (taskId: string, timeLog: Partial<TimeLog>) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    const newTimeLog: TimeLog = {
-      id: Date.now().toString(),
-      user_id: 'current-user-id', // Você obteria isso do contexto de autenticação
-      task_id,
-      start_time: timeLog.start_time || new Date().toISOString(),
-      end_time: timeLog.end_time || new Date().toISOString(),
-      duration: timeLog.duration || 0,
-      description: timeLog.description || '',
-      activity_type: timeLog.activity_type || 'development',
-    };
-
-    try {
-      await updateTask(taskId, {
-        time_logs: [...(task.time_logs || []), newTimeLog],
-        actual_hours: task.actual_hours + (newTimeLog.duration / 60)
-      });
-    } catch (err) {
-      console.error('Erro ao registrar tempo:', err);
-      throw err;
-    }
-  }, [tasks, updateTask]);
-
-  // Adicionar comentário
-  const addComment = useCallback(async (taskId: string, comment: Partial<Comment>) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      content: comment.content || '',
-      author: comment.author || 'current-user',
-      created_at: new Date().toISOString(),
-      type: comment.type || 'comment',
-      parent_id: comment.parent_id,
-    };
-
-    try {
-      await updateTask(taskId, {
-        comments: [...(task.comments || []), newComment]
-      });
-    } catch (err) {
-      console.error('Erro ao adicionar comentário:', err);
-      throw err;
-    }
-  }, [tasks, updateTask]);
-
-  // Adicionar anexo
-  const addAttachment = useCallback(async (taskId: string, file: File) => {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) return;
-
-    const newAttachment: Attachment = {
-      id: Date.now().toString(),
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      url: URL.createObjectURL(file), // Em produção, você faria upload para o servidor
-      uploaded_by: 'current-user',
-      uploaded_at: new Date().toISOString(),
-    };
-
-    try {
-      await updateTask(taskId, {
-        attachments: [...(task.attachments || []), newAttachment]
-      });
-    } catch (err) {
-      console.error('Erro ao adicionar anexo:', err);
-      throw err;
-    }
-  }, [tasks, updateTask]);
-
-  // Calcular métricas
-  const calculateMetrics = useCallback((): TaskMetrics => {
-    const total_tasks = tasks.length;
-    const completed_tasks = tasks.filter(t => t.status === 'done').length;
-    const in_progress_tasks = tasks.filter(t => t.status === 'in_progress').length;
-    const blocked_tasks = tasks.filter(t => 
-      t.comments?.some(c => c.type === 'blocker')
-    ).length;
-
-    // Calcular cycle time e lead time
-    const cycleTimes = tasks
-      .filter(t => t.status === 'done' && t.column_transitions)
-      .map(task => {
-        const startTransition = task.column_transitions?.find(t => t.to_column === 'in_progress');
-        const endTransition = task.column_transitions?.find(t => t.to_column === 'done');
-        
-        if (startTransition && endTransition) {
-          const start = new Date(startTransition.transition_date);
-          const end = new Date(endTransition.transition_date);
-          return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24); // dias
+        {
+          id: "2",
+          project_id: projectId,
+          title: "Corrigir bug no formulário",
+          description: "Formulário não valida campos obrigatórios",
+          status: "to_do",
+          priority: "critical",
+          type: "bug",
+          assignee_id: null,
+          reporter_id: "user-3",
+          estimated_hours: 2,
+          actual_hours: null,
+          story_points: 2,
+          sprint_id: null,
+          due_date: "2024-01-25",
+          created_at: "2024-01-18T09:00:00Z",
+          updated_at: "2024-01-18T09:00:00Z",
+          tags: ["bug", "form"],
+          attachments: [],
+          comments: []
         }
-        return 0;
-      });
-
-    const average_cycle_time = cycleTimes.length > 0 
-      ? cycleTimes.reduce((sum, time) => sum + time, 0) / cycleTimes.length 
-      : 0;
-
-    // Calcular velocity (story points completados)
-    const velocity = tasks
-      .filter(t => t.status === 'done')
-      .reduce((sum, task) => sum + task.story_points, 0);
-
-    // Gerar dados de burndown
-    const burndown_data = generateBurndownData(tasks);
-
-    return {
-      total_tasks,
-      completed_tasks,
-      in_progress_tasks,
-      blocked_tasks,
-      average_cycle_time,
-      average_lead_time: average_cycle_time, // Simplificado
-      velocity,
-      burndown_data,
-    };
-  }, [tasks]);
-
-  // Filtrar tasks
-  const filteredTasks = useCallback(() => {
-    let filtered = [...tasks];
-
-    if (filters.status?.length) {
-      filtered = filtered.filter(task => filters.status!.includes(task.status));
+      ]);
+    } finally {
+      setLoading(false);
     }
-
-    if (filters.priority?.length) {
-      filtered = filtered.filter(task => filters.priority!.includes(task.priority));
-    }
-
-    if (filters.assigned_to?.length) {
-      filtered = filtered.filter(task => filters.assigned_to!.includes(task.assigned_to));
-    }
-
-    if (filters.story_points?.length) {
-      const [min, max] = filters.story_points;
-      filtered = filtered.filter(task => 
-        task.story_points >= min && task.story_points <= max
-      );
-    }
-
-    if (filters.date_range) {
-      filtered = filtered.filter(task => {
-        const taskDate = new Date(task.created_at);
-        const start = new Date(filters.date_range!.start);
-        const end = new Date(filters.date_range!.end);
-        return taskDate >= start && taskDate <= end;
-      });
-    }
-
-    return filtered;
-  }, [tasks, filters]);
-
-  // Gerar dados de burndown
-  const generateBurndownData = (tasks: Task[]): BurndownPoint[] => {
-    // Implementação simplificada - em produção você teria dados reais de sprint
-    const today = new Date();
-    const sprintStart = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000); // 14 dias atrás
-    
-    const totalPoints = tasks.reduce((sum, task) => sum + task.story_points, 0);
-    const completedPoints = tasks
-      .filter(task => task.status === 'done')
-      .reduce((sum, task) => sum + task.story_points, 0);
-
-    const data: BurndownPoint[] = [];
-    for (let i = 0; i <= 14; i++) {
-      const date = new Date(sprintStart.getTime() + i * 24 * 60 * 60 * 1000);
-      const idealPoints = totalPoints - (totalPoints / 14) * i;
-      const remainingPoints = Math.max(0, totalPoints - completedPoints);
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        remaining_points: remainingPoints,
-        ideal_points: idealPoints,
-      });
-    }
-
-    return data;
   };
 
+  // Buscar sprints do projeto específico
+  const fetchSprints = async () => {
+    try {
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { data, error: supabaseError } = await supabase
+        .from("sprints")
+        .select("*")
+        .eq("project_id", projectId) // ✅ FILTRAR POR PROJETO
+        .order("start_date", { ascending: false });
+
+      if (supabaseError) {
+        console.error("Erro Supabase:", supabaseError);
+        throw new Error(supabaseError.message);
+      }
+
+      setSprints(data || []);
+
+    } catch (error) {
+      console.error("Erro ao buscar sprints:", error);
+      
+      // Dados mock para desenvolvimento
+      setSprints([
+        {
+          id: "sprint-1",
+          project_id: projectId,
+          name: "Sprint 1 - Fundação",
+          description: "Sprint inicial para estabelecer base do projeto",
+          start_date: "2024-01-15",
+          end_date: "2024-01-29",
+          status: "active",
+          goal: "Implementar autenticação e estrutura básica",
+          created_at: "2024-01-10T10:00:00Z",
+          updated_at: "2024-01-15T10:00:00Z"
+        }
+      ]);
+    }
+  };
+
+  // Criar task vinculada ao projeto
+  const createTask = async (taskData: Omit<Task, "id" | "created_at" | "updated_at">) => {
+    try {
+      setError(null);
+
+      if (!taskData.title.trim()) {
+        throw new Error("Título da task é obrigatório");
+      }
+
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { data, error: supabaseError } = await supabase
+        .from("tasks")
+        .insert([{
+          ...taskData,
+          project_id: projectId, // ✅ GARANTIR VINCULAÇÃO AO PROJETO
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (supabaseError) {
+        console.error("Erro Supabase ao criar task:", supabaseError);
+        throw new Error(supabaseError.message);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Task criada com sucesso!",
+      });
+
+      await fetchTasks();
+      return data;
+
+    } catch (error) {
+      console.error("Erro ao criar task:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+
+      toast({
+        title: "Erro",
+        description: `Não foi possível criar a task: ${errorMessage}`,
+        variant: "destructive",
+      });
+
+      throw error;
+    }
+  };
+
+  // Atualizar task
+  const updateTask = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      setError(null);
+
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { error: supabaseError } = await supabase
+        .from("tasks")
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", taskId)
+        .eq("project_id", projectId); // ✅ GARANTIR QUE É DO PROJETO CORRETO
+
+      if (supabaseError) {
+        console.error("Erro Supabase ao atualizar task:", supabaseError);
+        throw new Error(supabaseError.message);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Task atualizada com sucesso!",
+      });
+
+      await fetchTasks();
+
+    } catch (error) {
+      console.error("Erro ao atualizar task:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+
+      toast({
+        title: "Erro",
+        description: `Não foi possível atualizar a task: ${errorMessage}`,
+        variant: "destructive",
+      });
+
+      throw error;
+    }
+  };
+
+  // Excluir task
+  const deleteTask = async (taskId: string) => {
+    try {
+      setError(null);
+
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { error: supabaseError } = await supabase
+        .from("tasks")
+        .delete()
+        .eq("id", taskId)
+        .eq("project_id", projectId); // ✅ GARANTIR QUE É DO PROJETO CORRETO
+
+      if (supabaseError) {
+        console.error("Erro Supabase ao deletar task:", supabaseError);
+        throw new Error(supabaseError.message);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Task excluída com sucesso!",
+      });
+
+      await fetchTasks();
+
+    } catch (error) {
+      console.error("Erro ao deletar task:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+
+      toast({
+        title: "Erro",
+        description: `Não foi possível excluir a task: ${errorMessage}`,
+        variant: "destructive",
+      });
+
+      throw error;
+    }
+  };
+
+  // Criar sprint vinculado ao projeto
+  const createSprint = async (sprintData: Omit<Sprint, "id" | "created_at" | "updated_at">) => {
+    try {
+      setError(null);
+
+      if (!sprintData.name.trim()) {
+        throw new Error("Nome do sprint é obrigatório");
+      }
+
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { data, error: supabaseError } = await supabase
+        .from("sprints")
+        .insert([{
+          ...sprintData,
+          project_id: projectId, // ✅ GARANTIR VINCULAÇÃO AO PROJETO
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (supabaseError) {
+        console.error("Erro Supabase ao criar sprint:", supabaseError);
+        throw new Error(supabaseError.message);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Sprint criado com sucesso!",
+      });
+
+      await fetchSprints();
+      return data;
+
+    } catch (error) {
+      console.error("Erro ao criar sprint:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+
+      toast({
+        title: "Erro",
+        description: `Não foi possível criar o sprint: ${errorMessage}`,
+        variant: "destructive",
+      });
+
+      throw error;
+    }
+  };
+
+  // Atualizar sprint
+  const updateSprint = async (sprintId: string, updates: Partial<Sprint>) => {
+    try {
+      setError(null);
+
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { error: supabaseError } = await supabase
+        .from("sprints")
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", sprintId)
+        .eq("project_id", projectId); // ✅ GARANTIR QUE É DO PROJETO CORRETO
+
+      if (supabaseError) {
+        console.error("Erro Supabase ao atualizar sprint:", supabaseError);
+        throw new Error(supabaseError.message);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Sprint atualizado com sucesso!",
+      });
+
+      await fetchSprints();
+
+    } catch (error) {
+      console.error("Erro ao atualizar sprint:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+
+      toast({
+        title: "Erro",
+        description: `Não foi possível atualizar o sprint: ${errorMessage}`,
+        variant: "destructive",
+      });
+
+      throw error;
+    }
+  };
+
+  // Excluir sprint
+  const deleteSprint = async (sprintId: string) => {
+    try {
+      setError(null);
+
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { error: supabaseError } = await supabase
+        .from("sprints")
+        .delete()
+        .eq("id", sprintId)
+        .eq("project_id", projectId); // ✅ GARANTIR QUE É DO PROJETO CORRETO
+
+      if (supabaseError) {
+        console.error("Erro Supabase ao deletar sprint:", supabaseError);
+        throw new Error(supabaseError.message);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Sprint excluído com sucesso!",
+      });
+
+      await fetchSprints();
+
+    } catch (error) {
+      console.error("Erro ao deletar sprint:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+
+      toast({
+        title: "Erro",
+        description: `Não foi possível excluir o sprint: ${errorMessage}`,
+        variant: "destructive",
+      });
+
+      throw error;
+    }
+  };
+
+  // Buscar tasks por status
+  const getTasksByStatus = (status: Task["status"]) => {
+    return tasks.filter(task => task.status === status);
+  };
+
+  // Buscar tasks por sprint
+  const getTasksBySprint = (sprintId: string) => {
+    return tasks.filter(task => task.sprint_id === sprintId);
+  };
+
+  // Buscar tasks por assignee
+  const getTasksByAssignee = (assigneeId: string) => {
+    return tasks.filter(task => task.assignee_id === assigneeId);
+  };
+
+  // Buscar tasks por prioridade
+  const getTasksByPriority = (priority: Task["priority"]) => {
+    return tasks.filter(task => task.priority === priority);
+  };
+
+  // Buscar tasks por tipo
+  const getTasksByType = (type: Task["type"]) => {
+    return tasks.filter(task => task.type === type);
+  };
+
+  // Buscar sprint ativo
+  const getActiveSprint = () => {
+    return sprints.find(sprint => sprint.status === "active");
+  };
+
+  // Buscar sprints por status
+  const getSprintsByStatus = (status: Sprint["status"]) => {
+    return sprints.filter(sprint => sprint.status === status);
+  };
+
+  // Mover task entre status (drag and drop)
+  const moveTask = async (taskId: string, newStatus: Task["status"]) => {
+    await updateTask(taskId, { status: newStatus });
+  };
+
+  // Atribuir task a usuário
+  const assignTask = async (taskId: string, assigneeId: string) => {
+    await updateTask(taskId, { assignee_id: assigneeId });
+  };
+
+  // Adicionar task ao sprint
+  const addTaskToSprint = async (taskId: string, sprintId: string) => {
+    await updateTask(taskId, { sprint_id: sprintId });
+  };
+
+  // Remover task do sprint
+  const removeTaskFromSprint = async (taskId: string) => {
+    await updateTask(taskId, { sprint_id: null });
+  };
+
+  // Registrar horas trabalhadas
+  const logHours = async (taskId: string, hours: number) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      const newActualHours = (task.actual_hours || 0) + hours;
+      await updateTask(taskId, { actual_hours: newActualHours });
+    }
+  };
+
+  // Adicionar comentário à task
+  const addComment = async (taskId: string, content: string, userId: string) => {
+    try {
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { error: supabaseError } = await supabase
+        .from("comments")
+        .insert([{
+          task_id: taskId,
+          user_id: userId,
+          content,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }]);
+
+      if (supabaseError) {
+        throw new Error(supabaseError.message);
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Comentário adicionado com sucesso!",
+      });
+
+      await fetchTasks();
+
+    } catch (error) {
+      console.error("Erro ao adicionar comentário:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o comentário",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Carregar dados iniciais
+  useEffect(() => {
+    if (projectId) {
+      fetchTasks();
+      fetchSprints();
+    }
+  }, [projectId]);
+
   return {
-    // Estado
+    // Tasks
     tasks,
     loading,
     error,
-    filters,
-    
-    // Ações
-    loadTasks,
+    fetchTasks,
     createTask,
     updateTask,
+    deleteTask,
+    getTasksByStatus,
+    getTasksBySprint,
+    getTasksByAssignee,
+    getTasksByPriority,
+    getTasksByType,
     moveTask,
-    logTime,
+    assignTask,
+    addTaskToSprint,
+    removeTaskFromSprint,
+    logHours,
     addComment,
-    addAttachment,
-    setFilters,
-    
-    // Computed
-    filteredTasks: filteredTasks(),
-    metrics: calculateMetrics(),
+
+    // Sprints
+    sprints,
+    fetchSprints,
+    createSprint,
+    updateSprint,
+    deleteSprint,
+    getActiveSprint,
+    getSprintsByStatus,
   };
 }; 

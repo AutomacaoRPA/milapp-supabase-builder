@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,9 +24,12 @@ import {
   PlayCircle,
   Clock,
   User,
-  Save
+  Save,
+  MessageSquare
 } from "lucide-react";
 import { Project } from "@/hooks/useProjects";
+import CommentSystem from "@/components/CommentSystem";
+import { useComments } from "@/hooks/useComments";
 
 interface PDDProjectViewProps {
   project: Project;
@@ -45,6 +48,30 @@ const PDDProjectView = ({ project, onBack }: PDDProjectViewProps) => {
     resources: "",
     risks: ""
   });
+
+  // Usar comentários integrados do projeto
+  const comments = project.comments || [];
+  const metrics = project.metrics;
+
+  // Funções para gerenciar comentários
+  const handleAddComment = async (commentData: {
+    content: string;
+    type: 'comment' | 'update' | 'blocker' | 'solution';
+    parent_id?: string;
+  }) => {
+    // TODO: Implementar integração com useProjects
+    console.log('Adicionando comentário:', commentData);
+  };
+
+  const handleEditComment = async (commentId: string, content: string) => {
+    // TODO: Implementar integração com useProjects
+    console.log('Editando comentário:', commentId, content);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    // TODO: Implementar integração com useProjects
+    console.log('Removendo comentário:', commentId);
+  };
 
   // Mock stages data with proper status types
   const stages = [
@@ -202,6 +229,53 @@ const PDDProjectView = ({ project, onBack }: PDDProjectViewProps) => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Métricas Integradas */}
+                {metrics && (
+                  <>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <Target className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Tarefas</p>
+                            <p className="font-medium">{metrics.completed_tasks}/{metrics.total_tasks}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Sprints</p>
+                            <p className="font-medium">{metrics.completed_sprints}/{metrics.total_sprints}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                            <TrendingUp className="h-5 w-5 text-purple-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Deployments</p>
+                            <p className="font-medium">{metrics.deployment_count}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
 
                 <Card>
                   <CardContent className="p-4">
@@ -465,6 +539,28 @@ const PDDProjectView = ({ project, onBack }: PDDProjectViewProps) => {
                     Salvar Rascunho
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Sistema de Comentários */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  Comentários e Atualizações
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Acompanhe discussões, atualizações e bloqueios do projeto
+                </p>
+              </CardHeader>
+              <CardContent>
+                <CommentSystem
+                  comments={comments}
+                  onAddComment={handleAddComment}
+                  onEditComment={handleEditComment}
+                  onDeleteComment={handleDeleteComment}
+                  currentUser="Usuário Atual"
+                />
               </CardContent>
             </Card>
           </div>

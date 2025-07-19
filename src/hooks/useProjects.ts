@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Comment } from "@/components/CommentSystem";
+import { ProjectLifecycle, ProjectTask, ProjectSprint, ProjectRisk, ProjectStakeholder, ProjectMilestone, ProjectDeployment, ProjectDocument } from "@/types/project-lifecycle";
 
+// Manter interface Project para compatibilidade, mas usar ProjectLifecycle internamente
 export interface Project {
   id: string;
   name: string;
@@ -20,6 +23,36 @@ export interface Project {
   product_owner: string | null;
   created_at: string | null;
   updated_at: string | null;
+  // Campos integrados expandidos
+  comments?: Comment[];
+  tasks?: ProjectTask[];
+  sprints?: ProjectSprint[];
+  risks?: ProjectRisk[];
+  stakeholders?: ProjectStakeholder[];
+  milestones?: ProjectMilestone[];
+  deployments?: ProjectDeployment[];
+  documents?: ProjectDocument[];
+  metrics?: {
+    total_tasks: number;
+    completed_tasks: number;
+    total_sprints: number;
+    completed_sprints: number;
+    deployment_count: number;
+    last_deployment?: string;
+    velocity_average: number;
+    burndown_data: Array<{ date: string; remaining_points: number }>;
+    risk_count: { low: number; medium: number; high: number; critical: number };
+    stakeholder_engagement: number;
+  };
+  // Configurações do projeto
+  settings?: {
+    sprint_duration_weeks: number;
+    story_point_scale: "fibonacci" | "linear" | "custom";
+    definition_of_done: string[];
+    definition_of_ready: string[];
+    working_hours_per_day: number;
+    team_size: number;
+  };
 }
 
 export const useProjects = () => {
@@ -48,10 +81,26 @@ export const useProjects = () => {
         throw new Error(supabaseError.message);
       }
 
-      setProjects(data || []);
+      // Enriquecer projetos com dados integrados
+      const enrichedProjects = await Promise.all(
+        (data || []).map(async (project) => {
+          const [comments, metrics] = await Promise.all([
+            fetchProjectComments(project.id),
+            fetchProjectMetrics(project.id)
+          ]);
+
+          return {
+            ...project,
+            comments,
+            metrics
+          };
+        })
+      );
+
+      setProjects(enrichedProjects);
       
       // Log para debug
-      console.log("Projetos carregados:", data?.length || 0);
+      console.log("Projetos carregados:", enrichedProjects.length);
       
     } catch (error) {
       console.error("Erro ao buscar projetos:", error);
@@ -82,7 +131,25 @@ export const useProjects = () => {
           assigned_architect: "architect-1",
           product_owner: "po-1",
           created_at: "2024-01-15T10:00:00Z",
-          updated_at: "2024-01-20T14:30:00Z"
+          updated_at: "2024-01-20T14:30:00Z",
+          comments: [
+            {
+              id: "1",
+              content: "Projeto iniciado com sucesso!",
+              author: "João Silva",
+              created_at: new Date(Date.now() - 86400000).toISOString(),
+              type: 'update',
+              replies: []
+            }
+          ],
+          metrics: {
+            total_tasks: 12,
+            completed_tasks: 8,
+            total_sprints: 4,
+            completed_sprints: 2,
+            deployment_count: 3,
+            last_deployment: "2024-01-20T14:30:00Z"
+          }
         },
         {
           id: "2",
@@ -101,11 +168,155 @@ export const useProjects = () => {
           assigned_architect: null,
           product_owner: "po-2",
           created_at: "2024-01-10T09:00:00Z",
-          updated_at: "2024-01-10T09:00:00Z"
+          updated_at: "2024-01-10T09:00:00Z",
+          comments: [],
+          metrics: {
+            total_tasks: 0,
+            completed_tasks: 0,
+            total_sprints: 0,
+            completed_sprints: 0,
+            deployment_count: 0
+          }
         }
       ]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Buscar comentários de um projeto
+  const fetchProjectComments = async (projectId: string): Promise<Comment[]> => {
+    try {
+      if (!supabase) return [];
+
+      const { data, error } = await supabase
+        .from("project_comments")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Erro ao buscar comentários:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("Erro ao buscar comentários:", error);
+      return [];
+    }
+  };
+
+  // Buscar métricas de um projeto
+  const fetchProjectMetrics = async (projectId: string) => {
+    try {
+      if (!supabase) {
+        return {
+          total_tasks: 0,
+          completed_tasks: 0,
+          total_sprints: 0,
+          completed_sprints: 0,
+          deployment_count: 0
+        };
+      }
+
+      // Buscar métricas de tarefas
+      const { data: tasks, error: tasksError } = await supabase
+        .from("project_tasks")
+        .select("status")
+        .eq("project_id", projectId);
+
+      // Buscar métricas de sprints
+      const { data: sprints, error: sprintsError } = await supabase
+        .from("project_sprints")
+        .select("status")
+        .eq("project_id", projectId);
+
+      // Buscar métricas de deployments
+      const { data: deployments, error: deploymentsError } = await supabase
+        .from("project_deployments")
+        .select("created_at")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (tasksError || sprintsError || deploymentsError) {
+        console.error("Erro ao buscar métricas:", { tasksError, sprintsError, deploymentsError });
+      }
+
+      return {
+        total_tasks: tasks?.length || 0,
+        completed_tasks: tasks?.filter(t => t.status === 'completed').length || 0,
+        total_sprints: sprints?.length || 0,
+        completed_sprints: sprints?.filter(s => s.status === 'completed').length || 0,
+        deployment_count: deployments?.length || 0,
+        last_deployment: deployments?.[0]?.created_at
+      };
+    } catch (error) {
+      console.error("Erro ao buscar métricas:", error);
+      return {
+        total_tasks: 0,
+        completed_tasks: 0,
+        total_sprints: 0,
+        completed_sprints: 0,
+        deployment_count: 0
+      };
+    }
+  };
+
+  // Adicionar comentário a um projeto
+  const addProjectComment = async (projectId: string, commentData: {
+    content: string;
+    type: 'comment' | 'update' | 'blocker' | 'solution';
+    parent_id?: string;
+  }) => {
+    try {
+      if (!supabase) {
+        throw new Error("Cliente Supabase não configurado");
+      }
+
+      const { data, error } = await supabase
+        .from("project_comments")
+        .insert([{
+          project_id: projectId,
+          content: commentData.content,
+          type: commentData.type,
+          parent_id: commentData.parent_id,
+          author: "Usuário Atual", // TODO: Integrar com autenticação
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Atualizar projetos localmente
+      setProjects(prev => prev.map(project => {
+        if (project.id === projectId) {
+          return {
+            ...project,
+            comments: [...(project.comments || []), data]
+          };
+        }
+        return project;
+      }));
+
+      toast({
+        title: "Sucesso",
+        description: "Comentário adicionado com sucesso!",
+      });
+
+      return data;
+    } catch (error) {
+      console.error("Erro ao adicionar comentário:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o comentário.",
+        variant: "destructive",
+      });
+      throw error;
     }
   };
 
