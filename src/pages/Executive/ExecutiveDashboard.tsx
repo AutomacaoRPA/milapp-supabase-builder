@@ -387,7 +387,7 @@ export function ExecutiveDashboard() {
         category.metrics.some(metric => metric.status === 'critical')
       ) && (
         <Alert severity="error" sx={{ mb: 3 }}>
-          <Alert.Title>Atenção: Métricas Críticas</AlertTitle>
+          <AlertTitle>Atenção: Métricas Críticas</AlertTitle>
           {metrics
             .flatMap(category => category.metrics)
             .filter(metric => metric.status === 'critical')

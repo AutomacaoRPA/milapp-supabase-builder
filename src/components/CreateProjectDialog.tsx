@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -202,7 +201,7 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
               <Label htmlFor="category">Categoria</Label>
               <Select 
                 value={formData.category} 
-                onValueChange={(value) => setFormData({ ...formData, category: value })}
+                onValueChange={(value) => handleInputChange("category", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a categoria da sua ideia" />
@@ -225,9 +224,8 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 id="description"
                 placeholder="Descreva sua ideia em detalhes. Inclua o problema que resolve, como funciona e quais benefícios trará para os pacientes 50+ da MedSenior."
                 value={formData.description}
-<<<<<<< HEAD
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={4}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                rows={3}
               />
             </div>
 
@@ -238,11 +236,8 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 id="expected_impact"
                 placeholder="Descreva qual impacto você espera que sua ideia tenha nos pacientes, na operação ou nos resultados da MedSenior."
                 value={formData.expected_impact}
-                onChange={(e) => setFormData({ ...formData, expected_impact: e.target.value })}
-=======
-                onChange={(e) => handleInputChange("description", e.target.value)}
->>>>>>> cb12df2 ( PENTE FINO COMPLETO: Correções e validações implementadas - MILAPP 100% funcional\n\n CORREÇÕES IMPLEMENTADAS:\n- Hook useProjects com tratamento robusto de erros\n- CreateProjectDialog com validação completa\n- Navigation com busca e notificações funcionais\n- ProjectKanban com drag & drop operacional\n- Todos os botões conectados e funcionais\n\n FUNCIONALIDADES OPERACIONAIS:\n- Formulários com validação em tempo real\n- Navegação fluida entre páginas\n- Drag and drop no Kanban\n- Conexões com banco robustas\n- Feedback visual em todas as ações\n- Estados de loading implementados\n\n DOCUMENTAÇÃO:\n- PENTE_FINO_COMPLETO.md com detalhes das correções\n- Checklist de validação completo\n- Comandos para teste\n\n STATUS: PRONTO PARA VALIDAÇÃO COM EQUIPE!)
-                rows={3}
+                onChange={(e) => handleInputChange("expected_impact", e.target.value)}
+                rows={2}
               />
             </div>
 
@@ -252,11 +247,7 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                 <Label htmlFor="status">Status Inicial</Label>
                 <Select 
                   value={formData.status} 
-<<<<<<< HEAD
-                  onValueChange={(value: string) => setFormData({ ...formData, status: value })}
-=======
                   onValueChange={(value: any) => handleInputChange("status", value)}
->>>>>>> cb12df2 ( PENTE FINO COMPLETO: Correções e validações implementadas - MILAPP 100% funcional\n\n CORREÇÕES IMPLEMENTADAS:\n- Hook useProjects com tratamento robusto de erros\n- CreateProjectDialog com validação completa\n- Navigation com busca e notificações funcionais\n- ProjectKanban com drag & drop operacional\n- Todos os botões conectados e funcionais\n\n FUNCIONALIDADES OPERACIONAIS:\n- Formulários com validação em tempo real\n- Navegação fluida entre páginas\n- Drag and drop no Kanban\n- Conexões com banco robustas\n- Feedback visual em todas as ações\n- Estados de loading implementados\n\n DOCUMENTAÇÃO:\n- PENTE_FINO_COMPLETO.md com detalhes das correções\n- Checklist de validação completo\n- Comandos para teste\n\n STATUS: PRONTO PARA VALIDAÇÃO COM EQUIPE!)
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -369,7 +360,7 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                   id="responsible_name"
                   placeholder="Digite seu nome completo"
                   value={formData.responsible_name}
-                  onChange={(e) => setFormData({ ...formData, responsible_name: e.target.value })}
+                  onChange={(e) => handleInputChange("responsible_name", e.target.value)}
                 />
               </div>
 
@@ -380,7 +371,7 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
                   type="email"
                   placeholder="Digite seu email para receber retorno sobre a ideia"
                   value={formData.responsible_email}
-                  onChange={(e) => setFormData({ ...formData, responsible_email: e.target.value })}
+                  onChange={(e) => handleInputChange("responsible_email", e.target.value)}
                 />
               </div>
             </div>
@@ -398,17 +389,12 @@ const CreateProjectDialog = ({ open, onOpenChange, onCreateProject }: CreateProj
             >
               Cancelar
             </Button>
-<<<<<<< HEAD
-            <Button type="submit" disabled={isSubmitting || !formData.name.trim()}>
-              {isSubmitting ? "Revisar e Enviar Ideia" : "Criar Projeto"}
-=======
             <Button 
               type="submit" 
               disabled={isSubmitting || !formData.name.trim()}
               className="bg-gradient-primary"
             >
               {isSubmitting ? "Criando..." : "Criar Projeto"}
->>>>>>> cb12df2 ( PENTE FINO COMPLETO: Correções e validações implementadas - MILAPP 100% funcional\n\n CORREÇÕES IMPLEMENTADAS:\n- Hook useProjects com tratamento robusto de erros\n- CreateProjectDialog com validação completa\n- Navigation com busca e notificações funcionais\n- ProjectKanban com drag & drop operacional\n- Todos os botões conectados e funcionais\n\n FUNCIONALIDADES OPERACIONAIS:\n- Formulários com validação em tempo real\n- Navegação fluida entre páginas\n- Drag and drop no Kanban\n- Conexões com banco robustas\n- Feedback visual em todas as ações\n- Estados de loading implementados\n\n DOCUMENTAÇÃO:\n- PENTE_FINO_COMPLETO.md com detalhes das correções\n- Checklist de validação completo\n- Comandos para teste\n\n STATUS: PRONTO PARA VALIDAÇÃO COM EQUIPE!)
             </Button>
           </DialogFooter>
         </form>

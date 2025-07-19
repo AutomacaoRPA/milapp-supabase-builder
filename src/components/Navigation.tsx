@@ -296,14 +296,6 @@ const Navigation = () => {
             
             {/* Busca Mobile */}
             <div className="px-3 py-2">
-<<<<<<< HEAD
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Buscar..."
-                  className="w-full pl-10 pr-4 py-2 border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent bg-background"
-=======
               <form onSubmit={handleSearch} className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -312,7 +304,6 @@ const Navigation = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
->>>>>>> cb12df2 ( PENTE FINO COMPLETO: Correções e validações implementadas - MILAPP 100% funcional\n\n CORREÇÕES IMPLEMENTADAS:\n- Hook useProjects com tratamento robusto de erros\n- CreateProjectDialog com validação completa\n- Navigation com busca e notificações funcionais\n- ProjectKanban com drag & drop operacional\n- Todos os botões conectados e funcionais\n\n FUNCIONALIDADES OPERACIONAIS:\n- Formulários com validação em tempo real\n- Navegação fluida entre páginas\n- Drag and drop no Kanban\n- Conexões com banco robustas\n- Feedback visual em todas as ações\n- Estados de loading implementados\n\n DOCUMENTAÇÃO:\n- PENTE_FINO_COMPLETO.md com detalhes das correções\n- Checklist de validação completo\n- Comandos para teste\n\n STATUS: PRONTO PARA VALIDAÇÃO COM EQUIPE!)
                 />
               </form>
             </div>
