@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  milapp-medsenior-prod:
+    build: .
+    container_name: milapp-medsenior-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - NODE_ENV=production
+      - VITE_APP_NAME=MILAPP MedSênior
+      - VITE_APP_VERSION=2.0.0
+      - VITE_SUPABASE_URL=${SUPABASE_URL}
+      - VITE_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - VITE_OPENAI_API_KEY=${OPENAI_API_KEY}
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost/health.json"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.milapp-prod.rule=Host(`milapp.medsenior.com.br`)"
+      - "traefik.http.routers.milapp-prod.tls=true"
+      - "traefik.http.routers.milapp-prod.tls.certresolver=letsencrypt"
+      - "com.medsenior.service=milapp-production"
+      - "com.medsenior.version=2.0.0"
+      - "com.medsenior.environment=production"
+    networks:
+      - medsenior-network
+
+  # Monitoramento
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: milapp-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: always
+    networks:
+      - medsenior-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: milapp-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=medsenior123
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: always
+    networks:
+      - medsenior-network
+
+volumes:
+  prometheus_data:
+    name: milapp-prometheus-data
+  grafana_data:
+    name: milapp-grafana-data
+
+networks:
+  medsenior-network:
+    driver: bridge
+    name: milapp-medsenior-network 

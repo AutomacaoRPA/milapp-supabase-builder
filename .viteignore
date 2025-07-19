@@ -1,0 +1,17 @@
+# Pastas antigas
+old/
+frontend-old/
+backend-old/
+devops-old/
+node_modules_old/
+
+# Arquivos de build
+dist/
+build/
+
+# Logs
+*.log
+
+# Arquivos temporários
+*.tmp
+*.temp 

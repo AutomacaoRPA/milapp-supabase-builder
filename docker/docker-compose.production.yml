@@ -1,0 +1,187 @@
+version: '3.8'
+
+services:
+  backend-production:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL_PRODUCTION}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY_PRODUCTION}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY_PRODUCTION}
+      - REDIS_URL=redis://redis-production:6379/0
+      - SECRET_KEY=${SECRET_KEY_PRODUCTION}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - N8N_BASE_URL=${N8N_BASE_URL}
+      - N8N_API_KEY=${N8N_API_KEY}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - MINIO_ENDPOINT=minio-production:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY_PRODUCTION}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY_PRODUCTION}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME_PRODUCTION}
+      - MINIO_SECURE=false
+      - PROMETHEUS_URL=${PROMETHEUS_URL_PRODUCTION}
+      - GRAFANA_URL=${GRAFANA_URL_PRODUCTION}
+      - CORS_ORIGINS=${CORS_ORIGINS_PRODUCTION}
+      - ENVIRONMENT=production
+      - DEBUG=false
+    depends_on:
+      - redis-production
+      - minio-production
+    volumes:
+      - ./backend:/app
+      - milapp_files_production:/app/uploads
+    restart: unless-stopped
+    networks:
+      - milapp-production
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  frontend-production:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend-production
+    volumes:
+      - ./frontend/nginx.conf:/etc/nginx/nginx.conf
+    restart: unless-stopped
+    networks:
+      - milapp-production
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  dashboard-production:
+    build: ./dashboards
+    ports:
+      - "8501:8501"
+    environment:
+      - SUPABASE_URL=${SUPABASE_URL_PRODUCTION}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY_PRODUCTION}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY_PRODUCTION}
+    depends_on:
+      - backend-production
+    restart: unless-stopped
+    networks:
+      - milapp-production
+
+  redis-production:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_production:/data
+    restart: unless-stopped
+    networks:
+      - milapp-production
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  minio-production:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY_PRODUCTION}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY_PRODUCTION}
+    volumes:
+      - minio_data_production:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    networks:
+      - milapp-production
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  prometheus-production:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./devops/monitoring/prometheus.production.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data_production:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - milapp-production
+
+  grafana-production:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana_data_production:/var/lib/grafana
+      - ./devops/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./devops/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    restart: unless-stopped
+    networks:
+      - milapp-production
+
+  # Load Balancer para produção
+  nginx-production:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./devops/nginx/nginx.production.conf:/etc/nginx/nginx.conf
+      - ./devops/nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend-production
+      - backend-production
+    restart: unless-stopped
+    networks:
+      - milapp-production
+
+volumes:
+  redis_data_production:
+  minio_data_production:
+  prometheus_data_production:
+  grafana_data_production:
+  milapp_files_production:
+
+networks:
+  milapp-production:
+    driver: bridge 
