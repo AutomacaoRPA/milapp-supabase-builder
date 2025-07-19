@@ -1,109 +1,539 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
+  Paper,
   Typography,
+  Button,
   Card,
   CardContent,
   Grid,
-  Button,
+  Chip,
+  LinearProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
   IconButton,
-  Chip,
+  Tooltip,
   Alert,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
+  Tabs,
+  Tab,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  LinearProgress,
 } from '@mui/material';
 import {
-  Add as AddIcon,
-  PlayArrow as ExecuteIcon,
+  PlayArrow as PlayIcon,
+  Stop as StopIcon,
+  Refresh as RefreshIcon,
+  CheckCircle as CheckIcon,
+  Error as ErrorIcon,
+  Warning as WarningIcon,
+  Info as InfoIcon,
+  ExpandMore as ExpandMoreIcon,
+  Settings as SettingsIcon,
+  Timeline as TimelineIcon,
+  Assessment as AssessmentIcon,
+  Approval as ApprovalIcon,
+  History as HistoryIcon,
+  Download as DownloadIcon,
+  Share as ShareIcon,
+  Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  CheckCircle as PassedIcon,
-  Cancel as FailedIcon,
 } from '@mui/icons-material';
-import { useQualityGates, useQualityGateTypes, useCreateQualityGate, useExecuteQualityGate, useDeleteQualityGate } from '../../hooks/useQualityGates';
+import { useQualityGates } from '../../hooks/useQualityGates';
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`quality-gate-tabpanel-${index}`}
+      aria-labelledby={`quality-gate-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
+}
 
 const QualityGates: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [openCreateDialog, setOpenCreateDialog] = useState(false);
-  const [selectedQualityGate, setSelectedQualityGate] = useState<any>(null);
-
-  const { qualityGates, isLoading, error } = useQualityGates(0, 100);
-  const { qualityGateTypes } = useQualityGateTypes();
-  const createQualityGateMutation = useCreateQualityGate();
-  const executeQualityGateMutation = useExecuteQualityGate();
-  const deleteQualityGateMutation = useDeleteQualityGate();
-
-  const filteredQualityGates = qualityGates.filter(qg => {
-    const matchesSearch = qg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         qg.project_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !selectedStatus || qg.status === selectedStatus;
-    return matchesSearch && matchesStatus;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
+  const [tabValue, setTabValue] = useState(0);
+  const [selectedGate, setSelectedGate] = useState<any>(null);
+  const [showExecutionDialog, setShowExecutionDialog] = useState(false);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [executionConfig, setExecutionConfig] = useState({
+    environment: 'staging',
+    timeout: 300,
+    parallel: true,
+  });
+  const [approvalData, setApprovalData] = useState({
+    decision: 'approved',
+    comments: '',
+    recommendations: '',
   });
 
-  const handleExecuteQualityGate = async (qualityGateId: string) => {
+  const {
+    qualityGates,
+    loading,
+    error,
+    executeGate,
+    approveGate,
+    fetchQualityGates,
+    getGateDetails,
+  } = useQualityGates();
+
+  useEffect(() => {
+    fetchQualityGates();
+  }, [fetchQualityGates]);
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  const handleExecuteGate = async (gateId: string) => {
+    setSelectedGate(qualityGates.find(gate => gate.id === gateId));
+    setShowExecutionDialog(true);
+  };
+
+  const handleStartExecution = async () => {
+    if (!selectedGate) return;
+    
     try {
-      await executeQualityGateMutation.mutateAsync(qualityGateId);
+      await executeGate(selectedGate.id, executionConfig);
+      setShowExecutionDialog(false);
+      fetchQualityGates(); // Refresh data
     } catch (error) {
       console.error('Erro ao executar quality gate:', error);
     }
   };
 
-  const handleDeleteQualityGate = async (qualityGateId: string) => {
-    if (window.confirm('Tem certeza que deseja deletar este quality gate?')) {
-      try {
-        await deleteQualityGateMutation.mutateAsync(qualityGateId);
+  const handleApproveGate = async (gateId: string) => {
+    setSelectedGate(qualityGates.find(gate => gate.id === gateId));
+    setShowApprovalDialog(true);
+  };
+
+  const handleSubmitApproval = async () => {
+    if (!selectedGate) return;
+    
+    try {
+      await approveGate(selectedGate.id, approvalData);
+      setShowApprovalDialog(false);
+      fetchQualityGates(); // Refresh data
       } catch (error) {
-        console.error('Erro ao deletar quality gate:', error);
-      }
+      console.error('Erro ao aprovar quality gate:', error);
+    }
+  };
+
+  const handleViewDetails = async (gateId: string) => {
+    try {
+      const details = await getGateDetails(gateId);
+      setSelectedGate(details);
+      setShowDetailsDialog(true);
+    } catch (error) {
+      console.error('Erro ao buscar detalhes:', error);
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'passed':
-        return 'success';
-      case 'failed':
-        return 'error';
-      case 'pending':
-        return 'warning';
-      default:
-        return 'default';
+      case 'passed': return 'success';
+      case 'failed': return 'error';
+      case 'pending': return 'warning';
+      case 'in_progress': return 'info';
+      default: return 'default';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'passed':
-        return <PassedIcon />;
-      case 'failed':
-        return <FailedIcon />;
-      default:
-        return null;
+      case 'passed': return <CheckIcon />;
+      case 'failed': return <ErrorIcon />;
+      case 'pending': return <WarningIcon />;
+      case 'in_progress': return <InfoIcon />;
+      default: return <InfoIcon />;
     }
   };
 
-  if (isLoading) {
+  const getProgressValue = (gate: any) => {
+    if (gate.status === 'passed') return 100;
+    if (gate.status === 'failed') return 0;
+    if (gate.status === 'in_progress') return 50;
+    return 0;
+  };
+
+  const renderQualityGateCard = (gate: any) => (
+    <Card key={gate.id} sx={{ mb: 2, position: 'relative' }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+          <Box>
+            <Typography variant="h6" gutterBottom>
+              {gate.name}
+            </Typography>
+            <Typography variant="body2" color="textSecondary" gutterBottom>
+              {gate.project_name}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, mb: 1 }}>
+              <Chip
+                label={gate.type}
+                size="small"
+                variant="outlined"
+              />
+              <Chip
+                label={`Score: ${gate.score || 0}%`}
+                size="small"
+                color={gate.score >= 90 ? 'success' : gate.score >= 70 ? 'warning' : 'error'}
+              />
+            </Box>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip
+              icon={getStatusIcon(gate.status)}
+              label={gate.status}
+              color={getStatusColor(gate.status) as any}
+              size="small"
+            />
+          </Box>
+        </Box>
+
+        <LinearProgress
+          variant="determinate"
+          value={getProgressValue(gate)}
+          color={getStatusColor(gate.status) as any}
+          sx={{ mb: 2 }}
+        />
+
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="caption" color="textSecondary">
+            Executado por: {gate.executed_by || 'N/A'}
+          </Typography>
+          <Typography variant="caption" color="textSecondary">
+            {new Date(gate.executed_at || gate.created_at).toLocaleString()}
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<ViewIcon />}
+            onClick={() => handleViewDetails(gate.id)}
+          >
+            Detalhes
+          </Button>
+          
+          {gate.status === 'pending' && (
+            <Button
+              size="small"
+              variant="contained"
+              startIcon={<PlayIcon />}
+              onClick={() => handleExecuteGate(gate.id)}
+            >
+              Executar
+            </Button>
+          )}
+          
+          {gate.status === 'in_progress' && (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              disabled
+            >
+              Executando...
+            </Button>
+          )}
+          
+          {gate.status === 'passed' && (
+            <Button
+              size="small"
+              variant="contained"
+              color="success"
+              startIcon={<ApprovalIcon />}
+              onClick={() => handleApproveGate(gate.id)}
+            >
+              Aprovar
+            </Button>
+          )}
+        </Box>
+      </CardContent>
+    </Card>
+  );
+
+  const renderExecutionDialog = () => (
+    <Dialog open={showExecutionDialog} onClose={() => setShowExecutionDialog(false)} maxWidth="sm" fullWidth>
+      <DialogTitle>Executar Quality Gate</DialogTitle>
+      <DialogContent>
+        {selectedGate && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              {selectedGate.name}
+            </Typography>
+            <Typography variant="body2" color="textSecondary" gutterBottom>
+              {selectedGate.description}
+            </Typography>
+            
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Ambiente</InputLabel>
+              <Select
+                value={executionConfig.environment}
+                onChange={(e) => setExecutionConfig(prev => ({ ...prev, environment: e.target.value }))}
+                label="Ambiente"
+              >
+                <MenuItem value="staging">Staging</MenuItem>
+                <MenuItem value="production">Production</MenuItem>
+                <MenuItem value="development">Development</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <TextField
+              fullWidth
+              label="Timeout (segundos)"
+              type="number"
+              value={executionConfig.timeout}
+              onChange={(e) => setExecutionConfig(prev => ({ ...prev, timeout: parseInt(e.target.value) }))}
+              sx={{ mt: 2 }}
+            />
+            
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Execução</InputLabel>
+              <Select
+                value={executionConfig.parallel ? 'parallel' : 'sequential'}
+                onChange={(e) => setExecutionConfig(prev => ({ ...prev, parallel: e.target.value === 'parallel' }))}
+                label="Execução"
+              >
+                <MenuItem value="parallel">Paralela</MenuItem>
+                <MenuItem value="sequential">Sequencial</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setShowExecutionDialog(false)}>Cancelar</Button>
+        <Button onClick={handleStartExecution} variant="contained" startIcon={<PlayIcon />}>
+          Executar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  const renderApprovalDialog = () => (
+    <Dialog open={showApprovalDialog} onClose={() => setShowApprovalDialog(false)} maxWidth="md" fullWidth>
+      <DialogTitle>Aprovar Quality Gate</DialogTitle>
+      <DialogContent>
+        {selectedGate && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom>
+              {selectedGate.name}
+            </Typography>
+            
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <InputLabel>Decisão</InputLabel>
+              <Select
+                value={approvalData.decision}
+                onChange={(e) => setApprovalData(prev => ({ ...prev, decision: e.target.value }))}
+                label="Decisão"
+              >
+                <MenuItem value="approved">Aprovado</MenuItem>
+                <MenuItem value="rejected">Rejeitado</MenuItem>
+                <MenuItem value="conditional">Aprovado com Condições</MenuItem>
+              </Select>
+            </FormControl>
+            
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Comentários"
+              value={approvalData.comments}
+              onChange={(e) => setApprovalData(prev => ({ ...prev, comments: e.target.value }))}
+              sx={{ mt: 2 }}
+            />
+            
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Recomendações"
+              value={approvalData.recommendations}
+              onChange={(e) => setApprovalData(prev => ({ ...prev, recommendations: e.target.value }))}
+              sx={{ mt: 2 }}
+            />
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setShowApprovalDialog(false)}>Cancelar</Button>
+        <Button onClick={handleSubmitApproval} variant="contained" color="success">
+          Submeter Aprovação
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  const renderDetailsDialog = () => (
+    <Dialog open={showDetailsDialog} onClose={() => setShowDetailsDialog(false)} maxWidth="lg" fullWidth>
+      <DialogTitle>Detalhes do Quality Gate</DialogTitle>
+      <DialogContent>
+        {selectedGate && (
+          <Box sx={{ mt: 2 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Informações Gerais
+                    </Typography>
+                    <List dense>
+                      <ListItem>
+                        <ListItemText
+                          primary="Nome"
+                          secondary={selectedGate.name}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText
+                          primary="Projeto"
+                          secondary={selectedGate.project_name}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText
+                          primary="Tipo"
+                          secondary={selectedGate.type}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText
+                          primary="Status"
+                          secondary={
+                            <Chip
+                              icon={getStatusIcon(selectedGate.status)}
+                              label={selectedGate.status}
+                              color={getStatusColor(selectedGate.status) as any}
+                              size="small"
+                            />
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemText
+                          primary="Score"
+                          secondary={`${selectedGate.score || 0}%`}
+                        />
+                      </ListItem>
+                    </List>
+                  </CardContent>
+                </Card>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Critérios de Avaliação
+                    </Typography>
+                    <List dense>
+                      {selectedGate.criteria?.map((criterion: any, index: number) => (
+                        <ListItem key={index}>
+                          <ListItemIcon>
+                            {criterion.passed ? <CheckIcon color="success" /> : <ErrorIcon color="error" />}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={criterion.name}
+                            secondary={`${criterion.weight}% - ${criterion.description}`}
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </CardContent>
+                </Card>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Logs de Execução
+                    </Typography>
+                    <TableContainer>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Timestamp</TableCell>
+                            <TableCell>Nível</TableCell>
+                            <TableCell>Mensagem</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {selectedGate.logs?.map((log: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell>{new Date(log.timestamp).toLocaleString()}</TableCell>
+                              <TableCell>
+                                <Chip
+                                  label={log.level}
+                                  size="small"
+                                  color={log.level === 'ERROR' ? 'error' : log.level === 'WARNING' ? 'warning' : 'default'}
+                                />
+                              </TableCell>
+                              <TableCell>{log.message}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setShowDetailsDialog(false)}>Fechar</Button>
+        <Button startIcon={<DownloadIcon />}>
+          Exportar
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="400px">
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
         <CircularProgress />
       </Box>
     );
@@ -111,241 +541,78 @@ const QualityGates: React.FC = () => {
 
   if (error) {
     return (
-      <Box p={3}>
-        <Alert severity="error">
-          Erro ao carregar quality gates. Tente novamente.
-        </Alert>
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
         Quality Gates
       </Typography>
-
-      {/* Filtros e Busca */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <TextField
-                fullWidth
-                label="Buscar quality gates"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                InputProps={{
-                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  label="Status"
-                >
-                  <MenuItem value="">Todos</MenuItem>
-                  <MenuItem value="passed">Aprovado</MenuItem>
-                  <MenuItem value="failed">Reprovado</MenuItem>
-                  <MenuItem value="pending">Pendente</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} md={2}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
               <Button
                 variant="outlined"
-                startIcon={<FilterIcon />}
-                fullWidth
+            startIcon={<RefreshIcon />}
+            onClick={fetchQualityGates}
               >
-                Filtros
+            Atualizar
               </Button>
-            </Grid>
-            <Grid item xs={12} md={3}>
               <Button
                 variant="contained"
-                startIcon={<AddIcon />}
-                onClick={() => setOpenCreateDialog(true)}
-                fullWidth
+            startIcon={<SettingsIcon />}
               >
-                Novo Quality Gate
+            Configurar
               </Button>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Lista de Quality Gates */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nome</TableCell>
-              <TableCell>Projeto</TableCell>
-              <TableCell>Tipo</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Score</TableCell>
-              <TableCell>Threshold</TableCell>
-              <TableCell>Executado por</TableCell>
-              <TableCell>Data</TableCell>
-              <TableCell align="center">Ações</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredQualityGates.map((qualityGate) => (
-              <TableRow key={qualityGate.id}>
-                <TableCell>
-                  <Typography variant="subtitle2">{qualityGate.name}</Typography>
-                </TableCell>
-                <TableCell>{qualityGate.project_name}</TableCell>
-                <TableCell>
-                  <Chip 
-                    label={qualityGateTypes.find(t => t.id === qualityGate.type)?.name || qualityGate.type}
-                    size="small"
-                    color="primary"
-                    variant="outlined"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    icon={getStatusIcon(qualityGate.status)}
-                    label={qualityGate.status}
-                    size="small"
-                    color={getStatusColor(qualityGate.status) as any}
-                  />
-                </TableCell>
-                <TableCell>
-                  {qualityGate.score !== undefined ? (
-                    <Box display="flex" alignItems="center">
-                      <Typography variant="body2" sx={{ mr: 1 }}>
-                        {qualityGate.score}%
-                      </Typography>
-                      <LinearProgress
-                        variant="determinate"
-                        value={qualityGate.score}
-                        sx={{ width: 60, height: 6 }}
-                        color={qualityGate.score >= (qualityGate.threshold || 0) ? 'success' : 'error'}
-                      />
+        </Box>
                     </Box>
-                  ) : (
-                    '-'
-                  )}
-                </TableCell>
-                <TableCell>
-                  {qualityGate.threshold ? `${qualityGate.threshold}%` : '-'}
-                </TableCell>
-                <TableCell>{qualityGate.executed_by || '-'}</TableCell>
-                <TableCell>
-                  {qualityGate.executed_at 
-                    ? new Date(qualityGate.executed_at).toLocaleDateString('pt-BR')
-                    : '-'
-                  }
-                </TableCell>
-                <TableCell align="center">
-                  <IconButton
-                    size="small"
-                    onClick={() => handleExecuteQualityGate(qualityGate.id)}
-                    title="Executar"
-                    color="primary"
-                  >
-                    <ExecuteIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => setSelectedQualityGate(qualityGate)}
-                    title="Editar"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleDeleteQualityGate(qualityGate.id)}
-                    title="Deletar"
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
 
-      {/* Estatísticas */}
-      <Grid container spacing={3} sx={{ mt: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total de Quality Gates
-              </Typography>
-              <Typography variant="h4">
-                {qualityGates.length}
-              </Typography>
-            </CardContent>
-          </Card>
+      <Paper sx={{ mb: 3 }}>
+        <Tabs value={tabValue} onChange={handleTabChange} aria-label="quality gates tabs">
+          <Tab label="Todos" />
+          <Tab label="Pendentes" />
+          <Tab label="Em Execução" />
+          <Tab label="Aprovados" />
+          <Tab label="Falharam" />
+        </Tabs>
+      </Paper>
+
+      <TabPanel value={tabValue} index={0}>
+        <Grid container spacing={2}>
+          {qualityGates.map(renderQualityGateCard)}
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Aprovados
-              </Typography>
-              <Typography variant="h4" color="success.main">
-                {qualityGates.filter(qg => qg.status === 'passed').length}
-              </Typography>
-            </CardContent>
-          </Card>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={1}>
+        <Grid container spacing={2}>
+          {qualityGates.filter(gate => gate.status === 'pending').map(renderQualityGateCard)}
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Reprovados
-              </Typography>
-              <Typography variant="h4" color="error.main">
-                {qualityGates.filter(qg => qg.status === 'failed').length}
-              </Typography>
-            </CardContent>
-          </Card>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={2}>
+        <Grid container spacing={2}>
+          {qualityGates.filter(gate => gate.status === 'in_progress').map(renderQualityGateCard)}
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Taxa de Sucesso
-              </Typography>
-              <Typography variant="h4">
-                {qualityGates.length > 0 
-                  ? `${((qualityGates.filter(qg => qg.status === 'passed').length / qualityGates.length) * 100).toFixed(1)}%`
-                  : '0%'
-                }
-              </Typography>
-            </CardContent>
-          </Card>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={3}>
+        <Grid container spacing={2}>
+          {qualityGates.filter(gate => gate.status === 'passed').map(renderQualityGateCard)}
         </Grid>
+      </TabPanel>
+
+      <TabPanel value={tabValue} index={4}>
+        <Grid container spacing={2}>
+          {qualityGates.filter(gate => gate.status === 'failed').map(renderQualityGateCard)}
       </Grid>
+      </TabPanel>
 
-      {/* Dialog de Criação */}
-      <Dialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Criar Novo Quality Gate</DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-            Configure um novo quality gate para validação de qualidade.
-          </Typography>
-          {/* Formulário seria implementado aqui */}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCreateDialog(false)}>Cancelar</Button>
-          <Button variant="contained" onClick={() => setOpenCreateDialog(false)}>
-            Criar
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {renderExecutionDialog()}
+      {renderApprovalDialog()}
+      {renderDetailsDialog()}
     </Box>
   );
 };

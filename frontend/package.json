@@ -38,7 +38,20 @@
     "eject": "react-scripts eject",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "setup:dev": "npm install && npm run lint:fix && npm run type-check",
+    "test:all": "npm run test && npm run test:e2e && npm run test:coverage",
+    "test:coverage": "npm run test -- --coverage --watchAll=false",
+    "test:e2e": "cypress run",
+    "test:integration": "npm run test -- --testPathPattern=integration",
+    "dev:full": "concurrently \"npm start\" \"npm run test:watch\"",
+    "build:analyze": "npm run build && npx webpack-bundle-analyzer build/static/js/*.js",
+    "lighthouse": "lighthouse http://localhost:3000 --output=json --output-path=./lighthouse-report.json",
+    "security:check": "npm audit && npm audit fix",
+    "deploy:staging": "npm run build && docker build -t milapp-staging . && docker-compose -f docker-compose.staging.yml up -d",
+    "deploy:prod": "npm run build && docker build -t milapp-prod . && docker-compose -f docker-compose.production.yml up -d",
+    "logs:prod": "docker-compose -f docker-compose.production.yml logs -f",
+    "health:check": "curl -f http://localhost:3000/health || exit 1"
   },
   "eslintConfig": {
     "extends": [

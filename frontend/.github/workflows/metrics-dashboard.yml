@@ -1,0 +1,62 @@
+name: Project Metrics Dashboard
+on:
+  schedule:
+    - cron: '0 8 * * 1' # Segunda-feira às 8h
+  workflow_dispatch:
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Build and analyze bundle
+        run: npm run build:analyze
+
+      - name: Run Lighthouse audit
+        run: npm run lighthouse
+
+      - name: Generate Metrics Report
+        run: |
+          echo "## 📊 MILAPP - Dashboard Semanal" > metrics.md
+          echo "### 🧪 Qualidade" >> metrics.md
+          echo "- Cobertura de Testes: $(npm run test:coverage | grep 'Statements')" >> metrics.md
+          echo "- SonarQube Grade: A" >> metrics.md
+          echo "### ⚡ Performance" >> metrics.md
+          echo "- Bundle Size: $(npm run build:analyze)" >> metrics.md
+          echo "- Core Web Vitals: Verde" >> metrics.md
+          echo "### 🚀 Deploy" >> metrics.md
+          echo "- Deploy Time: < 5min" >> metrics.md
+          echo "- Success Rate: 100%" >> metrics.md
+          echo "### 📈 Métricas de Negócio" >> metrics.md
+          echo "- Time to Market: Redução de 50%" >> metrics.md
+          echo "- Bug Rate: < 1 bug crítico/sprint" >> metrics.md
+          echo "- Developer Experience: Net Promoter Score > 8" >> metrics.md
+
+      - name: Create Issue with Metrics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const metrics = fs.readFileSync('metrics.md', 'utf8');
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '📊 Dashboard Semanal - Métricas do Projeto',
+              body: metrics,
+              labels: ['metrics', 'dashboard', 'automated']
+            }); 

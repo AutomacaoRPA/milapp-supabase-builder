@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -23,6 +23,9 @@ import {
   Paper,
   IconButton,
   Tooltip,
+  LinearProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -32,11 +35,19 @@ import {
   Dashboard as DashboardIcon,
   Settings as SettingsIcon,
   MoreVert as MoreVertIcon,
+  Refresh as RefreshIcon,
+  FileUpload as ImportIcon,
+  FileDownload as ExportIcon,
 } from '@mui/icons-material';
 import { useProjects } from '../../hooks/useProjects';
 import KanbanBoard from '../../components/Projects/KanbanBoard';
 import BacklogView from '../../components/Projects/BacklogView';
 import SprintPlanning from '../../components/Projects/SprintPlanning';
+import EnhancedProjectCard from '../../components/Projects/EnhancedProjectCard';
+import SmartFilters from '../../components/Projects/SmartFilters';
+import KPIDashboard from '../../components/Projects/KPIDashboard';
+import QuickActions, { FloatingQuickActions } from '../../components/Projects/QuickActions';
+import { ProjectBreadcrumbs } from '../../components/Projects/EnhancedBreadcrumbs';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -61,9 +72,15 @@ function TabPanel(props: TabPanelProps) {
 }
 
 const Projects: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [activeTab, setActiveTab] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilters, setActiveFilters] = useState<any>({});
+  const [currentView, setCurrentView] = useState<'grid' | 'list' | 'kanban'>('grid');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -73,6 +90,74 @@ const Projects: React.FC = () => {
   });
 
   const { projects, isLoading, error, createProject } = useProjects();
+
+  // Filtrar projetos baseado na busca e filtros
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+
+    return projects.filter(project => {
+      // Filtro de busca
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        const matchesSearch = 
+          project.name.toLowerCase().includes(searchLower) ||
+          project.description?.toLowerCase().includes(searchLower) ||
+          project.type.toLowerCase().includes(searchLower);
+        
+        if (!matchesSearch) return false;
+      }
+
+      // Filtros de status
+      if (activeFilters.status && activeFilters.status.length > 0) {
+        if (!activeFilters.status.includes(project.status)) return false;
+      }
+
+      // Filtros de tipo
+      if (activeFilters.type && activeFilters.type.length > 0) {
+        if (!activeFilters.type.includes(project.type)) return false;
+      }
+
+      // Filtros de metodologia
+      if (activeFilters.methodology && activeFilters.methodology.length > 0) {
+        if (!activeFilters.methodology.includes(project.methodology)) return false;
+      }
+
+      // Filtros de prioridade
+      if (activeFilters.priority && activeFilters.priority.length > 0) {
+        if (!activeFilters.priority.includes(project.priority)) return false;
+      }
+
+      // Filtro de atrasados
+      if (activeFilters.overdue) {
+        if (project.end_date) {
+          const endDate = new Date(project.end_date);
+          const today = new Date();
+          if (endDate >= today || project.status === 'deployed') return false;
+        } else {
+          return false;
+        }
+      }
+
+      // Filtro desta semana
+      if (activeFilters.thisWeek) {
+        if (project.end_date) {
+          const endDate = new Date(project.end_date);
+          const today = new Date();
+          const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+          if (endDate > weekFromNow || endDate < today) return false;
+        } else {
+          return false;
+        }
+      }
+
+      // Filtro de alta prioridade
+      if (activeFilters.highPriority) {
+        if (project.priority !== 'high') return false;
+      }
+
+      return true;
+    });
+  }, [projects, searchQuery, activeFilters]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,48 +171,47 @@ const Projects: React.FC = () => {
 
   const handleProjectSelect = (projectId: string) => {
     setSelectedProject(projectId);
-    setActiveTab(0); // Reset para a primeira aba
+    setActiveTab(0);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'development':
-        return 'primary';
-      case 'testing':
-        return 'warning';
-      case 'deployed':
-        return 'success';
-      case 'planning':
-        return 'info';
-      default:
-        return 'default';
-    }
+  const handleEditProject = (projectId: string) => {
+    // Implementar edição de projeto
+    console.log('Editar projeto:', projectId);
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'error';
-      case 'medium':
-        return 'warning';
-      case 'low':
-        return 'success';
-      default:
-        return 'default';
-    }
+  const handleExecuteProject = (projectId: string) => {
+    // Implementar execução de projeto
+    console.log('Executar projeto:', projectId);
   };
 
-  const getMethodologyIcon = (methodology: string) => {
-    switch (methodology) {
-      case 'scrum':
-        return '🔄';
-      case 'kanban':
-        return '📋';
-      case 'hybrid':
-        return '⚡';
-      default:
-        return '📊';
-    }
+  const handleProjectMetrics = (projectId: string) => {
+    // Implementar visualização de métricas
+    console.log('Métricas do projeto:', projectId);
+  };
+
+  const handleImport = () => {
+    // Implementar importação
+    console.log('Importar projetos');
+  };
+
+  const handleExport = () => {
+    // Implementar exportação
+    console.log('Exportar projetos');
+  };
+
+  const handleSettings = () => {
+    // Implementar configurações
+    console.log('Configurações');
+  };
+
+  const handleRefresh = () => {
+    // Implementar refresh
+    console.log('Atualizar projetos');
+  };
+
+  const handleNavigate = (path: string) => {
+    // Implementar navegação
+    console.log('Navegar para:', path);
   };
 
   if (isLoading) {
@@ -154,6 +238,12 @@ const Projects: React.FC = () => {
     
     return (
       <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Breadcrumbs */}
+        <ProjectBreadcrumbs
+          currentProject={project}
+          onNavigate={handleNavigate}
+        />
+
         {/* Header do projeto */}
         <Paper sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
           <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -170,12 +260,12 @@ const Projects: React.FC = () => {
               </Typography>
               <Chip
                 label={project?.status}
-                color={getStatusColor(project?.status || '')}
+                color="primary"
                 size="small"
               />
               <Chip
                 label={project?.priority}
-                color={getPriorityColor(project?.priority || '')}
+                color="secondary"
                 size="small"
               />
             </Box>
@@ -247,89 +337,118 @@ const Projects: React.FC = () => {
     );
   }
 
-  // Lista de projetos
+  // Lista de projetos com melhorias de CX
   return (
     <Box p={3}>
+      {/* Header com título e ações */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Projetos</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setOpenDialog(true)}
-        >
-          Novo Projeto
-        </Button>
+        <Typography variant="h4" fontWeight={600}>
+          📋 Projetos
+        </Typography>
+        
+        {!isMobile && (
+          <QuickActions
+            onNewProject={() => setOpenDialog(true)}
+            onImport={handleImport}
+            onExport={handleExport}
+            onSettings={handleSettings}
+            onRefresh={handleRefresh}
+            onViewChange={setCurrentView}
+            currentView={currentView}
+          />
+        )}
       </Box>
 
+      {/* KPIs Dashboard */}
+      <KPIDashboard projects={projects || []} />
+
+      {/* Filtros Inteligentes */}
+      <SmartFilters
+        projects={projects || []}
+        onFilterChange={setActiveFilters}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
+      {/* Contador de resultados */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="body2" color="textSecondary">
+          {filteredProjects.length} de {projects?.length || 0} projetos
+        </Typography>
+        
+        {isMobile && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<RefreshIcon />}
+            onClick={handleRefresh}
+          >
+            Atualizar
+          </Button>
+        )}
+      </Box>
+
+      {/* Grid de projetos melhorado */}
       <Grid container spacing={3}>
-        {projects?.map((project) => (
-          <Grid item xs={12} sm={6} md={4} key={project.id}>
-            <Card
-              sx={{
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 4,
-                },
-              }}
-              onClick={() => handleProjectSelect(project.id)}
-            >
-              <CardContent>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                  <Typography variant="h6" gutterBottom sx={{ flex: 1 }}>
-                    {getMethodologyIcon(project.methodology || 'scrum')} {project.name}
-                  </Typography>
-                  <IconButton size="small">
-                    <MoreVertIcon />
-                  </IconButton>
-                </Box>
-                
-                <Typography variant="body2" color="textSecondary" paragraph>
-                  {project.description}
-                </Typography>
-                
-                <Box display="flex" gap={1} mb={2} flexWrap="wrap">
-                  <Chip
-                    label={project.status}
-                    color={getStatusColor(project.status)}
-                    size="small"
-                  />
-                  <Chip
-                    label={project.priority}
-                    color={getPriorityColor(project.priority)}
-                    size="small"
-                  />
-                  <Chip
-                    label={project.type}
-                    size="small"
-                    variant="outlined"
-                  />
-                </Box>
-
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="caption" color="textSecondary">
-                    Criado em: {new Date(project.created_at).toLocaleDateString()}
-                  </Typography>
-                  {project.completion_percentage !== undefined && (
-                    <Typography variant="caption" color="primary">
-                      {Math.round(project.completion_percentage)}% completo
-                    </Typography>
-                  )}
-                </Box>
-
-                {project.completion_percentage !== undefined && (
-                  <LinearProgress
-                    variant="determinate"
-                    value={project.completion_percentage}
-                    sx={{ mt: 1, height: 4, borderRadius: 2 }}
-                  />
-                )}
-              </CardContent>
-            </Card>
+        {filteredProjects.map((project) => (
+          <Grid item xs={12} sm={6} md={4} lg={3} key={project.id}>
+            <EnhancedProjectCard
+              project={project}
+              onClick={handleProjectSelect}
+              onEdit={handleEditProject}
+              onExecute={handleExecuteProject}
+              onMetrics={handleProjectMetrics}
+            />
           </Grid>
         ))}
       </Grid>
+
+      {/* Mensagem quando não há projetos */}
+      {filteredProjects.length === 0 && (
+        <Box
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          py={8}
+          textAlign="center"
+        >
+          <Typography variant="h6" color="textSecondary" mb={2}>
+            {searchQuery || Object.values(activeFilters).some(f => 
+              Array.isArray(f) ? f.length > 0 : f
+            ) 
+              ? 'Nenhum projeto encontrado com os filtros aplicados'
+              : 'Nenhum projeto criado ainda'
+            }
+          </Typography>
+          <Typography variant="body2" color="textSecondary" mb={3}>
+            {searchQuery || Object.values(activeFilters).some(f => 
+              Array.isArray(f) ? f.length > 0 : f
+            )
+              ? 'Tente ajustar os filtros ou a busca'
+              : 'Comece criando seu primeiro projeto'
+            }
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpenDialog(true)}
+          >
+            Criar Primeiro Projeto
+          </Button>
+        </Box>
+      )}
+
+      {/* Ações flutuantes para mobile */}
+      {isMobile && (
+        <FloatingQuickActions
+          onNewProject={() => setOpenDialog(true)}
+          onImport={handleImport}
+          onExport={handleExport}
+          onSettings={handleSettings}
+          onRefresh={handleRefresh}
+        />
+      )}
 
       {/* Dialog para criar projeto */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
